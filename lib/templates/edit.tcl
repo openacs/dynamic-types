@@ -1,7 +1,7 @@
 ad_page_contract {
 
 } -query {
-    id_column:integer,notnull
+    object_id:integer,notnull
 } -properties {
     page_title
     context
@@ -14,22 +14,25 @@ set package_id [ad_conn package_id]
 
 permission::require_permission \
     -party_id $user_id \
-    -object_id $id_column \
+    -object_id $object_id \
     -privilege "write"
 
-if {[info exists id_column] && $id_column ne ""} {
+if {[info exists object_id] && $object_id ne ""} {
     dtype::form::add_elements \
-        -object_id $id_column \
-        -form edit
+        -object_id $object_id \
+        -form edit \
+        -dform standard
 } else {
     dtype::form::add_elements \
         -form edit \
-        -object_type __object_type
+        -object_type __object_type \
+        -dform standard
 }
 if {[template::form::is_submission edit]} {
     dtype::form::process \
         -form edit \
-        -object_type __object_type
+        -object_type __object_type \
+        -dform standard
 }
 
 set page_title "Edit pretty_name"

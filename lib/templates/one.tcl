@@ -19,7 +19,8 @@ permission::require_permission \
 
 dtype::form::add_elements \
     -object_id $id_column \
-    -form display
+    -form display \
+    -dform standard
 
 template::form::set_properties \
     display \

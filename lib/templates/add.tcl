@@ -19,16 +19,19 @@ permission::require_permission \
 
 if {[info exists id_column] && $id_column ne ""} {
     dtype::form::add_elements \
+        -dform standard \
         -object_id $id_column \
         -form add
 } else {
     dtype::form::add_elements \
         -form add \
+        -dform standard
         -object_type __object_type
 }
 if {[template::form::is_submission add]} {
     dtype::form::process \
         -form add \
+        -dform standard
         -object_type __object_type
 }
 
