@@ -360,7 +360,7 @@ ns_log debug "PROCESSING: using existing value for $attributes(name) (ie. adding
                     values 
                     (:item_id, [join $values ", "])"
             } else { 
-                set latest_revision [db_map latest_revision]
+                set latest_revision [content::item::get_latest_revision -item_id $item_id]
 
                 db_dml insert_statement "
                     insert into ${type_info(table_name)}i 
