@@ -373,7 +373,7 @@ insert into dt_dummy (val) values (null);
 
 create function dt_dummy_ins_del_tr () returns trigger as '
 begin
-        raise execption ''Only updates are allowed on dt_dummy'';
+        raise exception ''Only updates are allowed on dt_dummy'';
         return null;
 end;' language 'plpgsql';
 
