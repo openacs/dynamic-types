@@ -28,28 +28,25 @@ ad_proc -public dtype::get_object {
 } {
     upvar $array local
 
-    dtype::get_attributes -name $object_type attributes
-    db_1row select_table_name {}
+    set attributes_list [dtype::get_attributes -name $object_type -list t attributes]
 
     set columns [list]
 
-    set size [template::multirow size attributes]
-    for {set i 1} {$i <= $size} {incr i} {
-        template::multirow get attributes $i
-
-        switch $attributes(datatype) {
+    foreach attribute_info $attributes_list {
+        foreach {name pretty_name attribute_id datatype table_name column_name default_value min_n_values max_n_values static_p} $attribute_info break
+        switch $datatype {
               date -
               timestamp -
               time_of_day {
                   set format "'YYYY-MM-DD HH24:MI:SS'"
-                  lappend columns "to_char($attributes(column_name), $format) as $attributes(name)"
+                  lappend columns "to_char($column_name, $format) as $name"
               }
               default {
-                  lappend columns "$attributes(column_name) as $attributes(name)"
+                  lappend columns "$column_name as $name"
               }
         }
     }
-
+    db_1row select_table_name {}
     set columns [join $columns ", "]
     db_0or1row select_object {} -column_array local
 }
@@ -129,43 +126,50 @@ ad_proc -public dtype::get_attributes {
     {-name:required}
     {-start_with "acs_object"}
     {-storage_types "type_specific"}
+    {-list "f"}
     multirow
 } {
     Gets all the attributes of a object_type.  Optionally
     it can return only those attributes after a given name.
 } {
-    template::multirow create $multirow \
-        name \
-        pretty_name \
-        attribute_id \
-        datatype \
-        table_name \
-        column_name \
-        default_value \
-        min_n_values \
-        max_n_values \
-        storage \
-        static_p
 
     set attributes [dtype::get_attributes_list \
         -name $name \
         -start_with $start_with \
         -storage_types $storage_types]
 
-    foreach attribute $attributes {
-        template::multirow append $multirow \
-            [lindex $attribute 0] \
-            [lindex $attribute 1] \
-            [lindex $attribute 2] \
-            [lindex $attribute 3] \
-            [lindex $attribute 4] \
-            [lindex $attribute 5] \
-            [lindex $attribute 6] \
-            [lindex $attribute 7] \
-            [lindex $attribute 8] \
-            [lindex $attribute 9] \
-            [lindex $attribute 10]
-    }
+    if {!$list} {
+    
+        template::multirow create $multirow \
+            name \
+            pretty_name \
+            attribute_id \
+            datatype \
+            table_name \
+            column_name \
+            default_value \
+            min_n_values \
+            max_n_values \
+            storage \
+            static_p
+        
+        foreach attribute $attributes {
+            template::multirow append $multirow \
+                [lindex $attribute 0] \
+                [lindex $attribute 1] \
+                [lindex $attribute 2] \
+                [lindex $attribute 3] \
+                [lindex $attribute 4] \
+                [lindex $attribute 5] \
+                [lindex $attribute 6] \
+                [lindex $attribute 7] \
+                [lindex $attribute 8] \
+                [lindex $attribute 9] \
+                [lindex $attribute 10]
+        }
+    } else {
+        return $attributes
+    } 
 }
 
 ad_proc -private dtype::get_attributes_list {

@@ -146,9 +146,6 @@ ad_proc -public dtype::form::process {
     Process a dynamic type form submission created by a function such as
     dtype::form::add_elements.  
 
-    @param object_id the object represented in the form.  If set the form is
-           assumed to be an edit form, otherwise it is assumed to be an object
-           create form
     @param object_type the object type whose metadata will define the form
     @param dform specifies the stored object form used
     @param dforms specifies the stored object form to use for particular object 
@@ -278,7 +275,7 @@ ad_proc -public dtype::form::process {
     # -defaults { context_id 1234 } argument
     
     foreach type $types {
-
+        set missing_columns ""
         # Add attributes to $columns and associated bind variables to $values 
         # for each type
         if {[info exists type_dforms($type)]} {
@@ -373,17 +370,17 @@ ns_log debug "PROCESSING: using existing value for $attributes(name) (ie. adding
             if {$new_p} { 
                 db_dml insert_statement "
                     insert into ${type_info(table_name)}i 
-                    (item_id, [join $columns ", "])
+                    ([join [concat "item_id" "revision_id" $columns] ", "])
                     values 
-                    (:item_id, [join $values ", "])"
+                    ([join [concat ":item_id" ":object_id" $values] ", "])"
             } else { 
                 set latest_revision [content::item::get_latest_revision -item_id $item_id]
 
                 db_dml insert_statement "
                     insert into ${type_info(table_name)}i 
-                    (item_id, [join [concat $columns $missing_columns] ", "])
-                    select item_id, 
-                    [join [concat $values $missing_columns] ", "]
+                    ([join [concat "item_id" "revision_id" $columns $missing_columns] ", "])
+                    select  
+                    [join [concat ":item_id" ":object_id" $values $missing_columns] ", "]
                     from ${type_info(table_name)}i
                     where revision_id = $latest_revision"
             }
@@ -497,10 +494,10 @@ ad_proc -private dtype::form::add_type_elements {
         if {![template::util::is_true $widgets(is_required)]} {
           append element_create_cmd " -optional"
         }
-
+        
         if {![string equal $widgets(widget) file]} {
             # Append the initial value
-            if {[info exists override($widgets(attribute_name))]} {
+            if {[info exists override(${widgets(attribute_name)})]} {
                 append element_create_cmd " [dtype::form::value_switch \
                     -widget $widgets(widget) \
                     -value $override($widgets(attribute_name))]"
