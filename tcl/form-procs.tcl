@@ -172,7 +172,6 @@ ad_proc -public dtype::form::process {
     # Pull the action out of the form
     set action [template::element::get_value $form ${prefix}dform_action]
     set new_p [string equal $action "new"]
-
     if {$new_p} {
         set types [dtype::form::types_list \
             -object_type $object_type]
@@ -275,10 +274,6 @@ ad_proc -public dtype::form::process {
     set columns [list]
     set values [list]
 
-    # DAVEB since add_elements excludes acs_object attributes, we need
-    # to set some of them to reasonable defaults
-    # object_type
-    # what do we do about context_id? Its application specific
     # LEED context_id and similar fields should be passed in using the
     # -defaults { context_id 1234 } argument
     
@@ -382,7 +377,7 @@ ns_log debug "PROCESSING: using existing value for $attributes(name) (ie. adding
                     values 
                     (:item_id, [join $values ", "])"
             } else { 
-                set latest_revision [db_map latest_revision]
+                set latest_revision [content::item::get_latest_revision -item_id $item_id]
 
                 db_dml insert_statement "
                     insert into ${type_info(table_name)}i 
@@ -807,14 +802,6 @@ ad_proc -public dtype::form::metadata::widgets {
     set metadata [dtype::form::metadata::widgets_list \
         -object_type $object_type \
         -dform $dform]
-ns_log notice "
-
-DB --------------------------------------------------------------------------------
-DB DAVE debugging procedure dtype::form::metadata::widgets
-DB --------------------------------------------------------------------------------
-DB object_type = '${object_type}'
-DB metadata = '${metadata}'
-DB --------------------------------------------------------------------------------"
     foreach widget $metadata {
         if {$multirow_p} {
             eval "template::multirow append \$multirow $widget"

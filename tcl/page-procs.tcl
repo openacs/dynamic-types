@@ -17,7 +17,7 @@ ad_proc -public dtype::page::generate_pages {
     -package_key
     {-overwrite "t"}
     {-expand_form "t"}
-    {-pages {add}}
+    {-pages {add edit one index}}
 } {
      Generate a set of add/edit/delete/index pages
     for a dynamic type
@@ -38,6 +38,9 @@ ad_proc -public dtype::page::generate_pages {
     acs_object_type::get -object_type $object_type -array object_type_info
     set id_column $object_type_info(id_column)
     set pretty_name $object_type_info(pretty_name)
+    set pretty_plural $object_type_info(pretty_plural)
+    set table_name $object_type_info(table_name)
+    
     set dest [file join [acs_root_dir] packages dynamic-types lib ${object_type}]
     if {![file exists $dest]} {
         file mkdir $dest
@@ -49,7 +52,9 @@ ad_proc -public dtype::page::generate_pages {
         close $fd
         regsub -all {id_column} $code $id_column code
         regsub -all {pretty_name} $code $pretty_name code
-        regsub -all {__object_type} $code $object_type code                
+        regsub -all {pretty_plural} $code $pretty_plural code
+        regsub -all {__object_type} $code $object_type code
+        regsub -all {table_name} $code $table_name code
         set fd [open [file join $dest ${page}.tcl] w]
         puts $fd $code
         close $fd
@@ -57,9 +62,15 @@ ad_proc -public dtype::page::generate_pages {
         set fd [open [adp_template_path -page ${page}]]
         set code [read $fd]
         close $fd
-        if {$expand_form} {
+        regsub -all {id_column} $code $id_column code
+        regsub -all {pretty_name} $code $pretty_name code
+        regsub -all {pretty_plural} $code $pretty_plural code
+        regsub -all {__object_type} $code $object_type code
+        regsub -all {table_name} $code $table_name code
+        if {[regexp {<formtemplate} $code] \
+                && $expand_form} {
             set regexp "<formtemplate id=\"${page}\"></formtemplate>"
-            set result "<formtemplate id=\"${page}\">[expand_form -object_type $object_type]</formtemplate>"
+            set result "<formtemplate id=\"${page}\">[expand_form -object_type $object_type -page ${page}]</formtemplate>"
             regsub $regexp $code $result code
         }
         set fd [open [file join $dest ${page}.adp] w]
@@ -104,6 +115,7 @@ ad_proc -public dtype::page::adp_template_path {
 
 ad_proc -public dtype::page::expand_form {
     -object_type
+    -page
 } {
     
     Generate adp for formtemplate
@@ -117,10 +129,15 @@ ad_proc -public dtype::page::expand_form {
     
     @error 
 } {
-    set form_id __my_form
+    set form_id $page
     template::form::create $form_id
     dtype::form::add_elements \
         -object_type $object_type \
-        -form $form_id
-    return [template::form::template $form_id]
+        -form $form_id \
+        -dform standard
+    # add a submit button
+    # FIXME do something smart here 
+    template::element create $form_id formbutton:ok -widget submit -label "  OK  " -datatype text
+    set result [template::form::template $form_id]
+    return $result
 }

@@ -371,7 +371,7 @@ ad_proc -public dtype::create_form {
                     if {[info exists type_dforms($type)]} {
                 set type_dform $type_dforms($type)
             } else {
-                set type_dform "default"
+                set type_dform "implicit"
             }
         
         dtype::form::metadata::widgets -object_type $type \
@@ -382,8 +382,15 @@ ad_proc -public dtype::create_form {
             set fk_array([lindex $l 0]) [lrange $l 1 end]
         }
         template::multirow foreach widgets {
+ns_log debug "
+DB --------------------------------------------------------------------------------
+DB DAVE debugging procedure dtype::create_form
+DB --------------------------------------------------------------------------------
+DB attribute_name = '${attribute_name}'
+DB widget = '${widget}' 
+DB --------------------------------------------------------------------------------"
             append code "
-            dtype::form::create_widget \
+            dtype::form::metadata::create_widget \
                 -object_type $object_type \
                 -dform $dform \
                 -attribute_name $attribute_name \
@@ -400,11 +407,11 @@ ad_proc -public dtype::create_form {
                 if {!$object_p} {
                     # create widget param for select list
                     append code "
-                    dtype::form::create_widget_param \
+                    dtype::form::metadata::create_widget_param \
                         -object_type $object_type \
                         -dform $dform \
                         -attribute_name $attribute_name \
-                        -param_name [dtype::table::pretty_name [lindex $fk_array($attribute_name) 0]] \
+                        -param_name options \
                         -type multilist \
                         -source query \
                         -value \"select $attribute_name, pretty_name from [lindex $fk_array($attribute_name) 1]\"
@@ -416,8 +423,11 @@ ad_proc -public dtype::create_form {
             
         }
     }
-
-return $code    
+    if {$evaluate} {
+        eval $code
+    } else {
+        return $code
+    }
 }
 
 ad_proc -public dtype::get_table_name {

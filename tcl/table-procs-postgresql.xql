@@ -20,6 +20,7 @@
     money money date date timestamptz date
     "timestamp with time zone" date
     "timestamp without time zone" date
+    timestamp date
     "time without time zone" time_of_day
     "time with time zone" time_of_day  time time_of_day "" enumeration
     "" url "" email "" keyword</querytext>

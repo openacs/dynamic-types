@@ -30,8 +30,6 @@ begin
   values (''email'', ''text'');
   insert into dtype_db_datatypes (datatype, db_type)
   values (''text'', ''text'');
-  insert into dtype_db_datatypes (datatype, db_type)
-  values (''string'', ''varchar(4000)'');
 
   raise notice ''Inserting standard widget metadata...'';
 
@@ -404,14 +402,8 @@ begin
   -- create ''default'' form for acs_object with only object_id so that
   -- by default the dtype::form api doesn''t try to add acs_object
   -- attributes to forms
-  PERFORM dtype_widget__register_form_widget(
-      ''acs_object'', 
-      ''default'',
-      ''object_id'', 
-      ''hidden'', 
-      ''t'',
-      ''t''
-  );
+  insert into dtype_forms (form_id, name, object_type)
+  values (nextval(''t_dtype_seq''), ''default'',''acs_object'');
 
   return 0;
 end;' language 'plpgsql';

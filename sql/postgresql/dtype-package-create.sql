@@ -418,17 +418,9 @@ begin
     from acs_object_types 
    where object_type = p_object_type;
 
-  select (case when p_object_type = ''content_revision'' then 1 
-          else 0 end) into v_content_revision_p
-    from dual;
-
-  if not v_content_revision_p then
-    select count(*) > 0 into v_content_revision_p
-      from acs_object_type_supertype_map
-     where object_type = p_object_type
-       and ancestor_type = ''content_revision'';
-  end if;
-
+  select content_type__is_content_type(p_object_type)
+         into v_content_revision_p;
+    
   --
   -- start building rule code
   --
