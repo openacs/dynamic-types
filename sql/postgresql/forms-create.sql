@@ -276,7 +276,7 @@ comment on table dtype_element_params is '
 ---------------------------------------------
 
 -- This view contains the elements of all defined forms plus the elements of a
--- 'default' form for all object_types that have metadata.
+-- 'implicit' form for all object_types that have metadata.
 
 create view dtype_form_elements_all as
   select a.attribute_id,
@@ -320,7 +320,7 @@ create view dtype_form_elements_all as
          a.static_p,
          a.column_name,
          null as form_id,
-         'default' as form_name,
+         'implicit' as form_name,
          null as element_id,
          wt.widget,
          (case when a.min_n_values > 0 then TRUE else FALSE end) as is_required
@@ -334,7 +334,7 @@ create view dtype_form_elements_all as
 -- This view contains all defined element parameters, any default parameters 
 -- each element has by virtue of its datatype and any default parameters each
 -- element has by virtue of its widget type in order of precedence.  It 
--- includes parameters for the 'default' forms defined in the view above.
+-- includes parameters for the 'implicit' forms defined in the view above.
 
 create view dtype_element_params_all as
   select e.element_id,

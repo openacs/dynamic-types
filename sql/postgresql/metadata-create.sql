@@ -220,6 +220,9 @@ begin
       null,
       null
   );
+
+  insert into dtype_default_widgets (template_id, datatype)
+  values (v_template_id, ''email'');
   
   -- URL
   v_template_id := dtype_wdgt_tmpl__new (
@@ -232,6 +235,9 @@ begin
       null,
       null
   );
+  
+  insert into dtype_default_widgets (template_id, datatype)
+  values (v_template_id, ''url'');
   
   -- Integer (default ''integer'' widget)
   v_template_id := dtype_wdgt_tmpl__new (
@@ -392,6 +398,18 @@ begin
 
   insert into dtype_default_widgets (template_id, datatype)
   values (v_template_id, ''enumeration'');
+
+  -- create ''default'' form for acs_object with only object_id so that
+  -- by default the dtype::form api doesn''t try to add acs_object
+  -- attributes to forms
+  PERFORM dtype_widget__register_form_widget(
+      ''acs_object'', 
+      ''default'',
+      ''object_id'', 
+      ''hidden'', 
+      ''t'',
+      ''t''
+  );
 
   return 0;
 end;' language 'plpgsql';

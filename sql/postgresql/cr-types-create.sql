@@ -7,7 +7,7 @@ begin
 
   PERFORM dtype_widget__register_form_widget(
       ''content_revision'', 
-      ''standard'',
+      ''default'',
       ''title'', 
       ''text'', 
       ''t'',
@@ -16,7 +16,7 @@ begin
 
   PERFORM dtype_widget__set_param_value(
       ''content_revision'', 
-      ''standard'',
+      ''default'',
       ''title'', 
       ''maxlength'', 
       ''1000'',
@@ -26,7 +26,7 @@ begin
 
   PERFORM dtype_widget__register_form_widget(
       ''content_revision'', 
-      ''standard'',
+      ''default'',
       ''description'', 
       ''textarea'',
       ''f'',
@@ -35,7 +35,7 @@ begin
 
   PERFORM dtype_widget__set_param_value(
       ''content_revision'', 
-      ''standard'',
+      ''default'',
       ''description'', 
       ''cols'', 
       ''40'',
@@ -47,7 +47,7 @@ begin
 
   PERFORM dtype_widget__register_form_widget(
       ''image'', 
-      ''standard'',
+      ''default'',
       ''width'', 
       ''text'',
       ''f'',
@@ -56,7 +56,7 @@ begin
 
   PERFORM dtype_widget__register_form_widget(
       ''image'', 
-      ''standard'',
+      ''default'',
       ''height'', 
       ''text'',
       ''f'',
@@ -65,7 +65,7 @@ begin
   
   PERFORM dtype_widget__set_param_value(
       ''image'', 
-      ''standard'',
+      ''default'',
       ''width'', 
       ''size'', 
       ''5'',
@@ -75,7 +75,7 @@ begin
 
   PERFORM dtype_widget__set_param_value(
       ''image'', 
-      ''standard'',
+      ''default'',
       ''height'', 
       ''size'', 
       ''5'',

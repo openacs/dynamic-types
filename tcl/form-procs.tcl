@@ -4,7 +4,7 @@ ad_library {
     
     The API manipulates two concepts - forms and widgets.  Forms are 
     mapped to object_types.  Each object_type can have several named forms 
-    mapped to it and is always mapped to a form called 'default'.  Each 
+    mapped to it and is always mapped to a form called 'implicit'.  Each 
     form is mapped to several widgets which correspond to the attributes 
     of its object_type.  
 
@@ -13,7 +13,7 @@ ad_library {
     modified by public users whereas the admin form could contain 
     additional elements that admin users can edit.
 
-    The default form always contains widgets for all attributes in a type.
+    The implicit form always contains widgets for all attributes in a type.
 
     Widgets have associated parameters which control how the html 
     representation is displayed, how values and options are retrieved and
@@ -22,7 +22,7 @@ ad_library {
     to play when a widget is combined a datatype - for example, the 
     default options for a radio widget used for a boolean datatype are 
     'Yes' and 'No'.  Any parameter can, and often should, be overridden 
-    for non-default forms.
+    for non-implicit forms.
 }
 
 namespace eval dtype {}
@@ -34,9 +34,10 @@ ad_proc -public dtype::form::add_elements {
     {-prefix ""}
     {-section ""}
     {-object_type ""}
-    {-dform default}
-    {-dforms {content_revision standard}}
+    {-dform implicit}
+    {-dforms {acs_object default content_revision default}}
     {-form:required}
+    {-overrides {}}
     {-cr_widget textarea}
     {-cr_widget_options {}}
 } {
@@ -54,62 +55,76 @@ ad_proc -public dtype::form::add_elements {
     @param dform specifies the stored object form to use
     @param dforms specifies the stored object form to use for particular object 
            types - used to override the dform parameter
-    @param form the name of the template::form to add the elements to
+    @param form the name of the template::form to add the elements to (will 
+           create the form if it doesn't already exist)
     @param prefix prefix for each attribute name to avoid collisions
     @param section form section that the elements should be added to
+    @param overrides key value pairs that will override the initial value of
+           a form element irrespective of the default value in the form 
+           metadata of the value in the object being edited
     @param content_widget the widget to use for the content when the 
            object_type is a subtype of content_revision
 } {
+    if {![template::form exists $form]} {
+        template::form create $form
+    }
+
     set types [dtype::form::types_list \
         -object_id $object_id \
         -object_type $object_type]
     set object_type [lindex $types 0]
     
+    set action edit
+    
     array set type_dforms $dforms
+    array set override $overrides
+
+    if {![string equal $object_id ""] &&
+        [info exists override(object_id)]} {
+        error "Cannot override object_id for an existing object"
+    } elseif {[string equal $object_id ""]} {
+        set action new
+
+        if {![info exists override(object_id)]} {
+            set override(object_id) [db_nextval acs_object_id_seq]
+        }
+    }
+
+    template::element create $form ${prefix}dform_action \
+        -widget hidden \
+        -datatype text \
+        -sign \
+        -value $action  
 
     foreach type $types {
-        # Add form elements for all types except for acs_object
-        if {[string equal $type "acs_object"]} {
-            if {![string equal $object_id ""]} {
-                # object exists so preserve the object_id in the form
-                template::element create $form ${prefix}object_id \
-                    -widget hidden \
-                    -datatype text \
-                    -section $section \
-                    -value $object_id
-            }
+        if {[info exists type_dforms($type)]} {
+            set type_dform $type_dforms($type)
         } else {
-            if {[info exists type_dforms($type)]} {
-                set type_dform $type_dforms($type)
-            } else {
-                set type_dform $dform
-            }
-
-            dtype::get_object -object_id $object_id \
-                -object_type $object_type \
-                -array object
-
-            # ensure the array exists
-            set object(object_id) $object_id
-
-            dtype::form::add_type_elements -object_array object \
-                -prefix $prefix \
-                -section $section \
-                -object_type $type \
-                -dform $type_dform \
-                -form $form \
-                -cr_widget $cr_widget \
-                -cr_widget_options $cr_widget_options
+            set type_dform $dform
         }
+
+        dtype::get_object -object_id $object_id \
+            -object_type $object_type \
+            -array object
+        set object(object_id) $object_id
+
+        dtype::form::add_type_elements -object_array object \
+            -prefix $prefix \
+            -section $section \
+            -object_type $type \
+            -dform $type_dform \
+            -form $form \
+            -overrides [array get override] \
+            -cr_widget $cr_widget \
+            -cr_widget_options $cr_widget_options
     }
 }
 
 ad_proc -public dtype::form::process {
-    {-object_id ""}
     {-prefix ""}
     {-object_type ""}
-    {-dform default}
-    {-dforms {content_revision standard}}
+    {-dform implicit}
+    {-dforms {acs_object default content_revision default}}
     {-form:required}
     {-defaults {}}
     {-cr_widget textarea}
@@ -128,7 +143,8 @@ ad_proc -public dtype::form::process {
            types - used to override the dform parameter
     @param form the name of the template::form used
     @param prefix the prefix for each attribute name used
-    @param defaults default values to use for attributes
+    @param defaults default values to use for attributes (this should be used
+           to supply values for context_id and the like)
     @param cr_widget the input method for the content 
     @param cr_storage the content repository storage method
     
@@ -136,10 +152,23 @@ ad_proc -public dtype::form::process {
 
     @see dtype::form::add_elements
 } {
-    set types [dtype::form::types_list \
-        -object_id $object_id \
-        -object_type $object_type]
-    set new_p [string equal $object_id ""]
+    # Pull the object_id out of the form - technically a acs_object dform
+    # could be created that doesn't include object_id as a field in which
+    # case this would just break.
+    set object_id [template::element::get_value $form ${prefix}object_id]
+
+    # Pull the action out of the form
+    set action [template::element::get_value $form ${prefix}dform_action]
+    set new_p [string equal $action "new"]
+
+    if {$new_p} {
+        set types [dtype::form::types_list \
+            -object_type $object_type]
+    } else {
+        set types [dtype::form::types_list \
+            -object_id $object_id]
+    }
+
     set content_type_p [expr {[lsearch $types "content_revision"] >= 0}]
 
     db_1row get_type_info {} -column_array type_info
@@ -173,14 +202,14 @@ ad_proc -public dtype::form::process {
             set item_id [db_nextval acs_object_id_seq]
 
             array set item_defaults [list item_id $item_id \
-                                         name "item$item_id" \
-                                         locale [db_null] \
-                                         parent_id [db_null] \
-                                         content_type $object_type \
-                                         creation_user [ad_conn user_id] \
-                                         creation_ip [ad_conn peeraddr] \
-                                         storage_type $cr_storage]
-            
+                name "item$item_id" \
+                locale [db_null] \
+                parent_id [db_null] \
+                content_type $object_type \
+                creation_user [ad_conn user_id] \
+                creation_ip [ad_conn peeraddr] \
+                storage_type $cr_storage]
+  
             foreach var [array names item_defaults] {
                 if {[info exists default($var)]} {
                     set item_$var $default($var)
@@ -234,84 +263,90 @@ ad_proc -public dtype::form::process {
     set columns [list]
     set values [list]
 
-    # DAVEB since add_elements exlcudes acs_object attributes, we need
-    # to set some of them to resonable defaults
+    # DAVEB since add_elements excludes acs_object attributes, we need
+    # to set some of them to reasonable defaults
     # object_type
     # what do we do about context_id? Its application specific
+    # LEED context_id and similar fields should be passed in using the
+    # -defaults { context_id 1234 } argument
     
     foreach type $types {
 
-            # Add attributes to $columns and associated bind variables to $values 
-            # for each type
-            if {[info exists type_dforms($type)]} {
-                set type_dform $type_dforms($type)
-            } else {
-                set type_dform $dform
-            }
+        # Add attributes to $columns and associated bind variables to $values 
+        # for each type
+        if {[info exists type_dforms($type)]} {
+            set type_dform $type_dforms($type)
+        } else {
+            set type_dform $dform
+        }
 
-            # get the attribute metadata for the object type
-            dtype::get_attributes -name $type \
-                -start_with $type \
-                attributes
+        # get the attribute metadata for the object type
+        dtype::get_attributes -name $type \
+                  -start_with $type \
+                  attributes
 
-            dtype::form::metadata::widgets -object_type $type \
+        dtype::form::metadata::widgets -object_type $type \
                 -dform $type_dform \
                 -indexed_array widgets
 
-            set size [template::multirow size attributes]
-            for {set i 1} {$i <= $size} {incr i} {
-                template::multirow get attributes $i
+        set size [template::multirow size attributes]
+        for {set i 1} {$i <= $size} {incr i} {
+            template::multirow get attributes $i
                 
-                set crv_$attributes(name) "" 
+            set crv_$attributes(name) "" 
 
-                if {[info exists widgets($attributes(attribute_id))]} {
+ns_log debug "PROCESSING: $attributes(name)"
+            if {[info exists widgets($attributes(attribute_id))]} {
+ns_log debug "PROCESSING: found $attributes(name) in form"
 
-                    # first check for the attribute in the submitted form
-                    set crv_$attributes(name) [template::element::get_values \
-                                                   $form \
-                                                   ${prefix}$attributes(name)]
+                # first check for the attribute in the submitted form
+                set crv_$attributes(name) [template::element::get_values \
+                                               $form \
+                                               ${prefix}$attributes(name)]
 
-                } elseif {[info exists default($attributes(name))]} {
+            } elseif {[info exists default($attributes(name))]} {
+ns_log debug "PROCESSING: using supplied default for $attributes(name)"
 
-                    # second check if the caller supplied a default value
-                    set crv_$attributes(name) $default($attributes(name))
+                # second check if the caller supplied a default value
+                set crv_$attributes(name) $default($attributes(name))
 
-                } elseif {$new_p &&
-                          ![string equal $attributes(default_value) ""]} {
+            } elseif {$new_p &&
+                      ![string equal $attributes(default_value) ""]} {
+ns_log debug "PROCESSING: using attribute default for $attributes(name)"
 
-                    # if we are inserting a new object then use the attributes 
-                    # default value
-                    set crv_$attributes(name) $attributes(default_value)
+                # if we are inserting a new object then use the attributes 
+                # default value
+                set crv_$attributes(name) $attributes(default_value)
 
-                } elseif {!$new_p} {
+            } elseif {!$new_p} {
+ns_log debug "PROCESSING: using existing value for $attributes(name) (ie. adding it to missing columns)"
 
-                    # append the column to missing columns so that the value
-                    # is copied from the previous revision when we are dealing
-                    # with content types
-                    lappend missing_columns $attributes(column_name)
+                # append the column to missing columns so that the value
+                # is copied from the previous revision when we are dealing
+                # with content types
+                lappend missing_columns $attributes(column_name)
 
-                }
+            }
 
-                if {![string equal [set crv_$attributes(name)] ""]} {
-                    lappend columns $attributes(column_name)
+            if {![string equal [set crv_$attributes(name)] ""]} {
+                lappend columns $attributes(column_name)
 
-                    # cast the value to the appropriate datatype
-                    switch $attributes(datatype) {
-                        date -
-                        time_of_day -
-                        timestamp {
-                            lappend values [template::util::date::get_property \
-                                                sql_date \
-                                                [lindex [set crv_$attributes(name)] 0]]
-                        }
-                        default {
-                            lappend values ":crv_$attributes(name)"
-                        }
+                # cast the value to the appropriate datatype
+                switch $attributes(datatype) {
+                    date -
+                    time_of_day -
+                    timestamp {
+                        lappend values [template::util::date::get_property \
+                            sql_date \
+                            [lindex [set crv_$attributes(name)] 0]]
+                    }
+                    default {
+                        lappend values ":crv_$attributes(name)"
                     }
                 }
             }
         }
-
+    }
 
     #######################################################
     # Perform the insert or update as appropriate
@@ -388,12 +423,13 @@ ad_proc -private dtype::form::add_type_elements {
     {-prefix ""}
     {-section ""}
     {-object_type:required}
-    {-dform default}
+    {-dform implicit}
     {-form:required}
+    {-overrides {}}
     {-cr_widget textarea}
     {-cr_widget_options {}}
 } {
-    Adds the elements of the specified or default object form to the specified
+    Adds the elements of the specified or implicit object form to the specified
     template form.  
 
     @param object_array the object for the form (not set for object creation)
@@ -404,6 +440,7 @@ ad_proc -private dtype::form::add_type_elements {
     @param section optional form section that the elements should be added to
 } {
     upvar $object_array object
+    array set override $overrides
 
     set new_p [string equal $object(object_id) ""]
 
@@ -444,16 +481,27 @@ ad_proc -private dtype::form::add_type_elements {
           append element_create_cmd " -optional"
         }
 
-        if {!$new_p && ![string equal $widgets(widget) file]} {
-            # Append the values in the object array
-            append element_create_cmd " [dtype::form::value_switch \
-                -widget $widgets(widget) \
-                -value $object($widgets(attribute_name))]"
+        if {![string equal $widgets(widget) file]} {
+            # Append the initial value
+            if {[info exists override($widgets(attribute_name))]} {
+                append element_create_cmd " [dtype::form::value_switch \
+                    -widget $widgets(widget) \
+                    -value $override($widgets(attribute_name))]"
+            } elseif {$new_p} {
+                append element_create_cmd " [dtype::form::value_switch \
+                    -widget $widgets(widget) \
+                    -value $widgets(default_value)]"
+            } else {
+                append element_create_cmd " [dtype::form::value_switch \
+                    -widget $widgets(widget) \
+                    -value $object($widgets(attribute_name))]"
+            }
         }
 
         # Get all the params for this element
         for {} {$p <= $param_count} {incr p} {
             template::multirow get params $p
+
             if {$params(attribute_id) != $widgets(attribute_id)} {
                 # No more parameters for this widget, finish
                 # processing this element
@@ -495,6 +543,11 @@ ad_proc -private dtype::form::add_type_elements {
             append options_line " -${name} \$overridables($name)"
         }
 
+        # sign all hidden variables
+        if {[string equal $widgets(widget) "hidden"]} {
+            append options_line " -sign"
+        }
+
         # Actually create the element
         eval "$element_create_cmd $options_line"
     }
@@ -526,12 +579,22 @@ ad_proc -private dtype::form::add_type_elements {
           append element_create_cmd " -optional"
         }
 
-        if {!$new_p && ![string equal $cr_widget file]} {
-            # Append the content value
-            append element_create_cmd " [dtype::form::value_switch \
-                -widget $cr_widget \
-                -value [cr_write_content -string \
-                           -revision_id $object(object_id)]]"
+        if {![string equal $cr_widget file]} {
+            if {[info exists override($widgets(attribute_name))]} {
+                append element_create_cmd " [dtype::form::value_switch \
+                    -widget $widgets(widget) \
+                    -value $override($widgets(attribute_name))]"
+            } elseif {!$new_p} {
+                append element_create_cmd " [dtype::form::value_switch \
+                    -widget $widgets(widget) \
+                    -value $widgets(default_value)]"
+            } else {
+                # Append the content value
+                append element_create_cmd " [dtype::form::value_switch \
+                    -widget $cr_widget \
+                    -value [cr_write_content -string \
+                               -revision_id $object(object_id)]]"
+            }
         }
 
         # Actually create the element
@@ -720,7 +783,7 @@ ad_proc -public dtype::form::metadata::widgets {
         -dform $dform]
 ns_log notice "
 
-    DB --------------------------------------------------------------------------------
+DB --------------------------------------------------------------------------------
 DB DAVE debugging procedure dtype::form::metadata::widgets
 DB --------------------------------------------------------------------------------
 DB object_type = '${object_type}'
