@@ -382,13 +382,6 @@ ad_proc -public dtype::create_form {
             set fk_array([lindex $l 0]) [lrange $l 1 end]
         }
         template::multirow foreach widgets {
-ns_log debug "
-DB --------------------------------------------------------------------------------
-DB DAVE debugging procedure dtype::create_form
-DB --------------------------------------------------------------------------------
-DB attribute_name = '${attribute_name}'
-DB widget = '${widget}' 
-DB --------------------------------------------------------------------------------"
             append code "
             dtype::form::metadata::create_widget \
                 -object_type $object_type \
@@ -406,6 +399,10 @@ DB -----------------------------------------------------------------------------
                 set object_p [lindex $fk_array($attribute_name) 2]
                 if {!$object_p} {
                     # create widget param for select list
+                    # if type of the foreign key table is a subtype of
+                    # content revision, use the i view
+                    # also check if its a dtype
+                    
                     append code "
                     dtype::form::metadata::create_widget_param \
                         -object_type $object_type \
@@ -414,7 +411,7 @@ DB -----------------------------------------------------------------------------
                         -param_name options \
                         -type multilist \
                         -source query \
-                        -value \"select $attribute_name, pretty_name from [lindex $fk_array($attribute_name) 1]\"
+                        -value \"select title, [lindex $fk_array($attribute_name) 0] from [lindex $fk_array($attribute_name) 1]\"
                         "
                  }
 
