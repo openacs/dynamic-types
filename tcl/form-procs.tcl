@@ -50,29 +50,29 @@ ad_proc -public dtype::form::add_elements {
     Only one of object_type or object_id may be supplied.
 
     @param object_id the object represented in the form.  If set the form is
-           assumed to be an edit form, otherwise it is assumed to be an object
-           create form
+    assumed to be an edit form, otherwise it is assumed to be an object
+    create form
     @param object_type the object type whose metadata will define the form
     @param dform specifies the stored object form to use
     @param dforms specifies the stored object form to use for particular object 
-           types - used to override the dform parameter
+    types - used to override the dform parameter
     @param form the name of the template::form to add the elements to (will 
-           create the form if it doesn't already exist)
+                                                                       create the form if it doesn't already exist)
     @param prefix prefix for each attribute name to avoid collisions
     @param section form section that the elements should be added to
     @param overrides key value pairs that will override the initial value of
-           a form element irrespective of the default value in the form 
-           metadata of the value in the object being edited
+    a form element irrespective of the default value in the form 
+    metadata of the value in the object being edited
     @param content_widget the widget to use for the content when the 
-           object_type is a subtype of content_revision
+    object_type is a subtype of content_revision
 } {
     if {![template::form exists $form]} {
         template::form create $form
     }
 
     set types [dtype::form::types_list \
-        -object_id $object_id \
-        -object_type $object_type]
+                   -object_id $object_id \
+                   -object_type $object_type]
     set object_type [lindex $types 0]
     
     set action edit
@@ -138,11 +138,11 @@ ad_proc -public dtype::form::process {
     @param object_type the object type whose metadata will define the form
     @param dform specifies the stored object form used
     @param dforms specifies the stored object form to use for particular object 
-           types - used to override the dform parameter
+    types - used to override the dform parameter
     @param form the name of the template::form used
     @param prefix the prefix for each attribute name used
     @param defaults default values to use for attributes (this should be used
-           to supply values for context_id and the like)
+                                                          to supply values for context_id and the like)
     @param cr_widget the input method for the content 
     @param cr_storage the content repository storage method
     
@@ -161,10 +161,10 @@ ad_proc -public dtype::form::process {
 
     if {$new_p} {
         set types [dtype::form::types_list \
-            -object_type $object_type]
+                       -object_type $object_type]
     } else {
         set types [dtype::form::types_list \
-            -object_id $object_id]
+                       -object_id $object_id]
     }
 
     set content_type_p [expr {[lsearch $types "content_revision"] >= 0}]
@@ -200,14 +200,14 @@ ad_proc -public dtype::form::process {
             set item_id [db_nextval acs_object_id_seq]
 
             array set item_defaults [list item_id $item_id \
-                name "item$item_id" \
-                locale [db_null] \
-                parent_id [db_null] \
-                content_type $object_type \
-                creation_user [ad_conn user_id] \
-                creation_ip [ad_conn peeraddr] \
-                storage_type $cr_storage]
-  
+                                         name "item$item_id" \
+                                         locale [db_null] \
+                                         parent_id [db_null] \
+                                         content_type $object_type \
+                                         creation_user [ad_conn user_id] \
+                                         creation_ip [ad_conn peeraddr] \
+                                         storage_type $cr_storage]
+            
             foreach var [array names item_defaults] {
                 if {[info exists default($var)]} {
                     set item_$var $default($var)
@@ -283,22 +283,22 @@ ad_proc -public dtype::form::process {
         }
         # get the attribute metadata for the object type
         dtype::get_attributes -name $type \
-                  -start_with $type \
-                  attributes
+            -start_with $type \
+            attributes
 
         dtype::form::metadata::widgets -object_type $type \
-                -dform $type_dform \
-                -indexed_array widgets
+            -dform $type_dform \
+            -indexed_array widgets
 
         set size [template::multirow size attributes]
         for {set i 1} {$i <= $size} {incr i} {
             template::multirow get attributes $i
-                
+            
             set crv_$attributes(name) "" 
 
-ns_log debug "PROCESSING: $attributes(name)"
+            ns_log debug "PROCESSING: $attributes(name)"
             if {[info exists widgets($attributes(attribute_id))]} {
-ns_log debug "PROCESSING: found $attributes(name) in form"
+                ns_log debug "PROCESSING: found $attributes(name) in form"
                 # first check for the attribute in the submitted form
                 array set this_widget_info $widgets($attributes(attribute_id))
                 switch $this_widget_info(widget) {
@@ -311,121 +311,122 @@ ns_log debug "PROCESSING: found $attributes(name) in form"
                     }
                     default {
                         set crv_$attributes(name) [template::element::get_value \
-                                               $form \
-                                               ${prefix}$attributes(name)]
+                                                       $form \
+                                                       ${prefix}$attributes(name)]
                     }
                 }
             } elseif {[info exists default($attributes(name))]} {
-ns_log debug "PROCESSING: using supplied default for $attributes(name)"
+                ns_log debug "PROCESSING: using supplied default for $attributes(name)"
 
-            if {![string equal [set crv_$attributes(name)] ""]} {
+                if {![string equal [set crv_$attributes(name)] ""]} {
 
-                # second check if the caller supplied a default value
-                set crv_$attributes(name) $default($attributes(name))
+                    # second check if the caller supplied a default value
+                    set crv_$attributes(name) $default($attributes(name))
 
-            } elseif {$new_p &&
-                      ![string equal $attributes(default_value) ""]} {
-ns_log debug "PROCESSING: using attribute default for $attributes(name)"
+                } elseif {$new_p &&
+                          ![string equal $attributes(default_value) ""]} {
+                    ns_log debug "PROCESSING: using attribute default for $attributes(name)"
 
-                # if we are inserting a new object then use the attributes 
-                # default value
-                set crv_$attributes(name) $attributes(default_value)
+                    # if we are inserting a new object then use the attributes 
+                    # default value
+                    set crv_$attributes(name) $attributes(default_value)
 
-            } elseif {!$new_p} {
-ns_log debug "PROCESSING: using existing value for $attributes(name) (ie. adding it to missing columns)"
+                } elseif {!$new_p} {
+                    ns_log debug "PROCESSING: using existing value for $attributes(name) (ie. adding it to missing columns)"
 
-                # append the column to missing columns so that the value
-                # is copied from the previous revision when we are dealing
-                # with content types
-                lappend missing_columns $attributes(column_name)
+                    # append the column to missing columns so that the value
+                    # is copied from the previous revision when we are dealing
+                    # with content types
+                    lappend missing_columns $attributes(column_name)
 
-            }
-            if {![string equal [set crv_$attributes(name)] ""]} {
-                lappend columns $attributes(column_name)
+                }
+                if {![string equal [set crv_$attributes(name)] ""]} {
+                    lappend columns $attributes(column_name)
 
-                # cast the value to the appropriate datatype
-                switch $attributes(datatype) {
-                    date -
-                    time_of_day -
-                    timestamp {
-                        lappend values [template::util::date::get_property \
-                            sql_date \
-                            [lindex [set crv_$attributes(name)] 0]]
-                    }
-                    default {
-                        lappend values ":crv_$attributes(name)"
+                    # cast the value to the appropriate datatype
+                    switch $attributes(datatype) {
+                        date -
+                        time_of_day -
+                        timestamp {
+                            lappend values [template::util::date::get_property \
+                                                sql_date \
+                                                [lindex [set crv_$attributes(name)] 0]]
+                        }
+                        default {
+                            lappend values ":crv_$attributes(name)"
+                        }
                     }
                 }
             }
         }
-    }
 
-    #######################################################
-    # Perform the insert or update as appropriate
-    #
-    if {$content_type_p} {
-        db_transaction {
-            if {$new_p} { 
-                db_dml insert_statement "
+        #######################################################
+        # Perform the insert or update as appropriate
+        #
+        if {$content_type_p} {
+            db_transaction {
+                if {$new_p} { 
+                    db_dml insert_statement "
                     insert into ${type_info(table_name)}i 
                     ([join [concat "item_id" "revision_id" $columns] ", "])
                     values 
                     ([join [concat ":item_id" ":object_id" $values] ", "])"
-            } else { 
-                set latest_revision [content::item::get_latest_revision -item_id $item_id]
+                } else { 
+                    set latest_revision [content::item::get_latest_revision -item_id $item_id]
 
-                db_dml insert_statement "
+                    db_dml insert_statement "
                     insert into ${type_info(table_name)}i 
                     ([join [concat "item_id" "revision_id" $columns $missing_columns] ", "])
                     select  
                     [join [concat ":item_id" ":object_id" $values $missing_columns] ", "]
                     from ${type_info(table_name)}i
                     where revision_id = $latest_revision"
-            }
-
-            set revision_ids [db_list get_revision_ids {}]
-            set revision_id [lindex $revision_ids 0]
-            set prev_revision_id [lindex $revision_ids 1]
-
-            if {[string equal $cr_widget none] ||
-                ([string equal $cr_widget file] && 
-                 [string equal $tmp_file ""])} {
-
-                # either a content widget wasn't included in the form or
-                # no new file was uploaded, so we want to preserve the previous
-                # revisions content
-                if {![string equal $prev_revision_id ""]} {
-                    db_dml update_content {}
                 }
-            } else {
-                dtype::upload_content -item_id $item_id \
-                    -revision_id $revision_id \
-                    -file $tmp_file \
-                    -storage_type $cr_storage
 
-                ns_unlink $tmp_file
+                set revision_ids [db_list get_revision_ids {}]
+                set revision_id [lindex $revision_ids 0]
+                set prev_revision_id [lindex $revision_ids 1]
+
+                if {[string equal $cr_widget none] ||
+                    ([string equal $cr_widget file] && 
+                     [string equal $tmp_file ""])} {
+
+                    # either a content widget wasn't included in the form or
+                    # no new file was uploaded, so we want to preserve the previous
+                    # revisions content
+                    if {![string equal $prev_revision_id ""]} {
+                        db_dml update_content {}
+                    }
+                } else {
+                    dtype::upload_content -item_id $item_id \
+                        -revision_id $revision_id \
+                        -file $tmp_file \
+                        -storage_type $cr_storage
+
+                    ns_unlink $tmp_file
+                }
             }
-        }
-    } else {
-        if {$new_p} { 
-            db_dml insert_statement "
+        } else {
+            if {$new_p} { 
+                db_dml insert_statement "
                 insert into ${type_info(table_name)}i ([join $columns ", "])
                 values ([join $values ", "])"
-        } else {
-            set updates [list]
+            } else {
+                set updates [list]
 
-            set all_columns [concat $columns $missing_columns]
-            set all_values [concat $values $missing_columns]
+                set all_columns [concat $columns $missing_columns]
+                set all_values [concat $values $missing_columns]
 
-            set length [llength $all_columns]
-            for {set i 0} {$i < $length} {incr i} {
-                lappend updates "[lindex $all_columns $i] = [lindex $all_values $i]"
-            }
+                set length [llength $all_columns]
+                for {set i 0} {$i < $length} {incr i} {
+                    lappend updates "[lindex $all_columns $i] = [lindex $all_values $i]"
+                }
 
-            db_dml update_statement "
+                db_dml update_statement "
                 update ${type_info(table_name)}i 
                 set [join $updates ", "]
                 where $type_info(id_column) = :object_id"
+            }
         }
     }
 }
@@ -460,12 +461,12 @@ ad_proc -private dtype::form::add_type_elements {
     # Get the widget metadata
     #
     dtype::form::metadata::widgets -object_type $object_type \
-                                   -dform $dform \
-                                   -multirow widgets
+        -dform $dform \
+        -multirow widgets
     
     dtype::form::metadata::params -object_type $object_type \
-                                  -dform $dform \
-                                  -multirow params
+        -dform $dform \
+        -multirow params
 
     set widget_count [template::multirow size widgets]
     set param_count [template::multirow size params]
@@ -490,7 +491,7 @@ ad_proc -private dtype::form::add_type_elements {
           -nospell"
 
         if {![template::util::is_true $widgets(is_required)]} {
-          append element_create_cmd " -optional"
+            append element_create_cmd " -optional"
         }
         
         if {![string equal $widgets(widget) file]} {
@@ -574,7 +575,7 @@ ad_proc -private dtype::form::add_type_elements {
     }
 
     array set cr_options_array $cr_widget_options
-        
+    
     if {[string equal $object_type "content_revision"] &&
         ![string equal $cr_widget "none"]} {
 
@@ -588,7 +589,7 @@ ad_proc -private dtype::form::add_type_elements {
             -section \$section"
 
         if {[template::util::is_true $cr_options_array(optional)]} {
-          append element_create_cmd " -optional"
+            append element_create_cmd " -optional"
         }
 
         if {![string equal $cr_widget file]} {
@@ -766,26 +767,26 @@ ad_proc -public dtype::form::metadata::widgets {
     }
 
     set keys [list \
-         attribute_id \
-         object_type \
-         table_name \
-         attribute_name \
-         pretty_name \
-         pretty_plural \
-         sort_order \
-         datatype \
-         default_value \
-         min_n_values \
-         max_n_values \
-         storage \
-         static_p \
-         column_name \
-         form_id \
-         form_name \
-         element_id \
-         widget \
-         is_required \
-    ]
+                  attribute_id \
+                  object_type \
+                  table_name \
+                  attribute_name \
+                  pretty_name \
+                  pretty_plural \
+                  sort_order \
+                  datatype \
+                  default_value \
+                  min_n_values \
+                  max_n_values \
+                  storage \
+                  static_p \
+                  column_name \
+                  form_id \
+                  form_name \
+                  element_id \
+                  widget \
+                  is_required \
+                 ]
 
 
     if {$multirow_p} {
@@ -795,8 +796,8 @@ ad_proc -public dtype::form::metadata::widgets {
     }
 
     set metadata [dtype::form::metadata::widgets_list \
-        -object_type $object_type \
-        -dform $dform]
+                      -object_type $object_type \
+                      -dform $dform]
     foreach widget $metadata {
         if {$multirow_p} {
             eval "template::multirow append \$multirow $widget"
@@ -850,19 +851,19 @@ ad_proc -public dtype::form::metadata::params {
     }
 
     set keys [list \
-         element_id \
-         attribute_id \
-         form_id \
-         form_name \
-         param_id \
-         param_type \
-         param_source \
-         value \
-         param \
-         is_required \
-         is_html \
-         default_value \
-    ]
+                  element_id \
+                  attribute_id \
+                  form_id \
+                  form_name \
+                  param_id \
+                  param_type \
+                  param_source \
+                  value \
+                  param \
+                  is_required \
+                  is_html \
+                  default_value \
+                 ]
 
     if {$multirow_p} {
         eval "template::multirow create \$multirow $keys"
@@ -871,8 +872,8 @@ ad_proc -public dtype::form::metadata::params {
     }
 
     set metadata [dtype::form::metadata::params_list \
-        -object_type $object_type \
-        -dform $dform]
+                      -object_type $object_type \
+                      -dform $dform]
     
     foreach param $metadata {
         if {$multirow_p} {
