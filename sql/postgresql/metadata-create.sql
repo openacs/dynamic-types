@@ -30,6 +30,8 @@ begin
   values (''email'', ''text'');
   insert into dtype_db_datatypes (datatype, db_type)
   values (''text'', ''text'');
+  insert into dtype_db_datatypes (datatype, db_type)
+  values (''string'', ''varchar(4000)'');
 
   raise notice ''Inserting standard widget metadata...'';
 

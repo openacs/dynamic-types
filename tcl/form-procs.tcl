@@ -1,3 +1,4 @@
+
 ad_library {
     A library of functions to generate forms for acs_objects from stored 
     metadata.
@@ -309,11 +310,22 @@ ad_proc -public dtype::form::process {
 ns_log debug "PROCESSING: $attributes(name)"
             if {[info exists widgets($attributes(attribute_id))]} {
 ns_log debug "PROCESSING: found $attributes(name) in form"
-
                 # first check for the attribute in the submitted form
-                set crv_$attributes(name) [template::element::get_values \
+                array set this_widget_info $widgets($attributes(attribute_id))
+                switch $this_widget_info(widget) {
+                    file {}
+                    checkbox -
+                    multiselect {
+                        set crv_$attributes(name) [template::element::get_values \
+                                                       $form \
+                                                       ${prefix}$attributes(name)]
+                    }
+                    default {
+                        set crv_$attributes(name) [template::element::get_value \
                                                $form \
                                                ${prefix}$attributes(name)]
+                    }
+                }
 
             } elseif {[info exists default($attributes(name))]} {
 ns_log debug "PROCESSING: using supplied default for $attributes(name)"
@@ -338,7 +350,6 @@ ns_log debug "PROCESSING: using existing value for $attributes(name) (ie. adding
                 lappend missing_columns $attributes(column_name)
 
             }
-
             if {![string equal [set crv_$attributes(name)] ""]} {
                 lappend columns $attributes(column_name)
 
@@ -624,13 +635,13 @@ ad_proc -private dtype::form::value_switch {
         file {}
         checkbox -
         multiselect {
-            return "-values $value"
+            return "-values \"$value\""
         }
         date {
             return "-value {[template::util::date::from_ansi $value]}"
         }
         default {
-            return "-value $value"
+            return "-value \"$value\""
         }
     }
 }
