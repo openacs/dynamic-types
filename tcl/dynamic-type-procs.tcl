@@ -113,7 +113,9 @@ ad_proc -public dtype::create_attribute {
         set default_value [db_null]
     }
     
-    db_1row select_column_spec {}
+    if {![db_0or1row select_column_spec {}]} {
+        set column_spec ""
+    }
 
     db_exec_plsql create_attr {}
     
@@ -239,6 +241,7 @@ ad_proc -public dtype::delete_attribute {
     util::event::fire -event dtype.attribute event
 }
 
+
 ad_proc -public dtype::def_from_table {
     {-supertype "acs_object"}
     {-table_name:required}
@@ -280,23 +283,176 @@ ad_proc -public dtype::def_from_table {
     "
 
     # get columns from table
-    set cols [dtype::table::get_table_array -table $table_name]
-    set type_map [dtype::table::get_db_type_map]
-    foreach {col type} $cols {
-        # append create attribute code
-        if {$col != $id_column} {
-        append code "
-            dtype::create_attribute \
-                -name \"${col}\" \
-                -object_type \"${name}\" \
-                -data_type \"[string map $type_map $type]\" \
-                -pretty_name \"[dtype::table::pretty_name $col]\" \
-                -pretty_plural \"[dtype::table::pretty_plural $col]\" \
-                -sort_order \"\" \
-                -default_value \"\"
-"
+    array set cols [dtype::table::get_table_array -table $table_name]
+    set fks [dtype::table::get_fk -table $table_name]
+    foreach l $fks {
+        foreach {col fk_col fk_table object_p} $l break
+        # if columns has a foreign key and its not referrign to an
+        # acs_object, its probably a lookup table
+        if {!$object_p} {
+            set cols($col) "enumeration"
         }
     }
+    set type_map [dtype::table::get_db_type_map]
+ns_log notice "
+DB --------------------------------------------------------------------------------
+DB DAVE debugging procedure dtype::def_from_table
+DB --------------------------------------------------------------------------------
+DB fks = '${fks}'
+DB [array names cols]
+DB --------------------------------------------------------------------------------"
+    foreach col [array names cols] {
+        set type $cols($col)
+        # append create attribute code
+        if {$col != $id_column} {
+            # if foreign key and foreign key is not an object
+            append code "
+dtype::create_attribute \
+    -name \"${col}\" \
+    -object_type \"${name}\" \
+    -data_type \"[string map $type_map $type]\" \
+    -pretty_name \"[dtype::table::pretty_name $col]\" \
+    -pretty_plural \"[dtype::table::pretty_plural $col]\" \
+    -sort_order \"\" \
+    -default_value \"\"
+"
+            }
+        }
+    
     return $code
+}
+
+ad_proc -public dtype::create_form {
+    -object_type
+    {-dform "standard"}
+    {-dforms {content_revision standard acs_object empty_acs_object}}
+    {-exclude ""}
+    {-spec ""}
+    {-evaluate "t"}
+} {
+     Create a dynamic types form for object type based on type
+     definition using intelligent defaults.
+    
+    @author Dave Bauer (dave@thedesignexperience.org)
+    @creation-date 2005-02-14
+    
+    @param object_type Object type form is for
+
+    @param dform Name of form. We can't use 'default' because that is
+    reserved for the unspecificed form.
+
+    @param exclude Attributes to exclude from automatically generated form.
+
+    @param spec Declarative specification for form defintion. Optional
+    instead of calling dtype::form::generate_widget repeatedly
+
+    @param evaluate T or F, whether to evalute the code or just
+    return it 
+
+    @return If evaluate is false, return code generated.
+    
+    @error 
+} {
+    set code ""
+    # get widget defaults
+
+    # get all types
+    set types [dtype::form::types_list \
+        -object_id "" \
+        -object_type $object_type]
+    set object_type [lindex $types 0]
+    
+    array set type_dforms $dforms
+
+    # FIXME use spec if available!
+    
+    # get default widgets
+    foreach type $types {
+                    if {[info exists type_dforms($type)]} {
+                set type_dform $type_dforms($type)
+            } else {
+                set type_dform "default"
+            }
+        
+        dtype::form::metadata::widgets -object_type $type \
+                                   -dform $type_dform \
+                                   -multirow widgets
+        set fks [dtype::table::get_fk -table [dtype::get_table_name -object_type $type]]
+        foreach l $fks {
+            set fk_array([lindex $l 0]) [lrange $l 1 end]
+        }
+        template::multirow foreach widgets {
+            append code "
+            dtype::form::create_widget \
+                -object_type $object_type \
+                -dform $dform \
+                -attribute_name $attribute_name \
+                -widget $widget \
+                -required_p 0 \
+                -create_form_p 1
+"
+            # check attribute datatype
+            # for foreign keys, if should be enumeration
+            # if so, we want to create a select widget
+            # that queries the fk table
+            if {$datatype == "enumeration" && [info exists fk_array($attribute_name)]} {
+                set object_p [lindex $fk_array($attribute_name) 2]
+                if {!$object_p} {
+                    # create widget param for select list
+                    append code "
+                    dtype::form::create_widget_param \
+                        -object_type $object_type \
+                        -dform $dform \
+                        -attribute_name $attribute_name \
+                        -param_name [dtype::table::pretty_name [lindex $fk_array($attribute_name) 0]] \
+                        -type multilist \
+                        -source query \
+                        -value \"select $attribute_name, pretty_name from [lindex $fk_array($attribute_name) 1]\"
+                        "
+                 }
+
+            }
+
+            
+        }
+    }
+
+return $code    
+}
+
+ad_proc -public dtype::get_table_name {
+    -object_type
+} {
+    
+    Get name of type specicifc storage table
+    
+    @author Dave Bauer (dave@thedesignexperience.org)
+    @creation-date 2005-02-14
+    
+    @param object_type Object type
+
+    @return Table Name
+    
+    @error 
+} {
+    return [db_string get_table_name "" -default ""]
+}
+
+ad_proc -public dtype::get_id_column {
+    -object_type
+} {
+    
+    Get name of type specicifc storage table
+    
+    @author Dave Bauer (dave@thedesignexperience.org)
+    @creation-date 2005-02-14
+    
+    @param object_type Object type
+
+    @return Table Name
+    
+    @error 
+} {
+    return [db_string get_id_column "" -default ""]
 }
 

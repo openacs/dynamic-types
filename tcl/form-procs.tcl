@@ -89,7 +89,7 @@ ad_proc -public dtype::form::add_elements {
             set override(object_id) [db_nextval acs_object_id_seq]
         }
     }
-
+    
     template::element create $form ${prefix}dform_action \
         -widget hidden \
         -datatype text \
@@ -118,6 +118,17 @@ ad_proc -public dtype::form::add_elements {
             -cr_widget $cr_widget \
             -cr_widget_options $cr_widget_options
     }
+    # special case object_id (really i'd like to use the
+    # object_type id_column, but this hack works for now
+    # basically this should work just like ad_form
+    if {[info exists override(object_id)]} {
+        set object_id $override(object_id)
+    }
+    template::element::create \
+        $form object_id \
+        -widget hidden \
+        -value $object_id \
+        -sign
 }
 
 ad_proc -public dtype::form::process {
@@ -584,7 +595,8 @@ ad_proc -private dtype::form::add_type_elements {
                 append element_create_cmd " [dtype::form::value_switch \
                     -widget $widgets(widget) \
                     -value $override($widgets(attribute_name))]"
-            } elseif {!$new_p} {
+            } elseif {$new_p} {
+                # don't try to put content in the form element on new form
                 append element_create_cmd " [dtype::form::value_switch \
                     -widget $widgets(widget) \
                     -value $widgets(default_value)]"
@@ -693,7 +705,6 @@ ad_proc -private dtype::form::parameter_value {
     if {[string equal $object_type ""]} {
         set object_type [db_string get_object_type {}]
     }
-
     switch $param(param_source) {
         eval {
             set value [eval $param(value)]
@@ -709,6 +720,11 @@ ad_proc -private dtype::form::parameter_value {
                     }
                     multilist {
                         set value [db_list_of_lists param_query $param(value)]
+                        # if the option list is empty, return
+                        # somethign the select widget can use
+                        if {$value eq ""} {
+                            set value [list [list]]
+                        }
                     }             
                 }
             }] {
@@ -725,7 +741,6 @@ ad_proc -private dtype::form::parameter_value {
         }
     }
     # end switch
-
     return $value
 }
 

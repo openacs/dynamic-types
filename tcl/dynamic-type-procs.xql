@@ -52,5 +52,19 @@
  
          </querytext>
    </fullquery>
- 
+
+  <fullquery name="dtype::get_table_name.get_table_name">
+    <querytext>
+      select table_name from acs_object_types where
+      object_type=:object_type
+    </querytext>
+  </fullquery>
+
+  <fullquery name="dtype::get_id_column.get_id_column">
+    <querytext>
+      select id_column from acs_object_types where
+      object_type=:object_type
+    </querytext>
+  </fullquery>
+  
 </queryset>

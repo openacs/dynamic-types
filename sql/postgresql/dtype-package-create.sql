@@ -576,7 +576,6 @@ begin
   if not v_content_revision_p then
       execute ''create view '' || v_table_name ||
         ''i as select acs_objects.object_id, acs_objects.object_type,
-          acs_objects.package_id, acs_objects.title,
           acs_objects.context_id, acs_objects.security_inherit_p,
           acs_objects.creation_user, acs_objects.creation_date,
           acs_objects.creation_ip, acs_objects.last_modified,
@@ -590,7 +589,6 @@ begin
       -- updates on this view
       execute ''create view '' || v_table_name ||
         ''i as select acs_objects.object_id, acs_objects.object_type,
-          acs_objects.package_id, acs_objects.title as object_title,
           acs_objects.context_id, acs_objects.security_inherit_p,
           acs_objects.creation_user, acs_objects.creation_date,
           acs_objects.creation_ip, acs_objects.last_modified,
