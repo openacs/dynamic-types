@@ -21,18 +21,18 @@ if {[info exists object_id] && $object_id ne ""} {
     dtype::form::add_elements \
         -object_id $object_id \
         -form edit \
-        -dform standard
+        -dform __dform
 } else {
     dtype::form::add_elements \
         -form edit \
         -object_type __object_type \
-        -dform standard
+        -dform __dform
 }
 if {[template::form::is_submission edit]} {
     dtype::form::process \
         -form edit \
         -object_type __object_type \
-        -dform standard
+        -dform __dform
 }
 
 set page_title "Edit pretty_name"

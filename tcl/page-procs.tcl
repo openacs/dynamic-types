@@ -15,6 +15,7 @@ namespace eval dtype::page:: {}
 ad_proc -public dtype::page::generate_pages {
     -object_type
     -package_key
+    {-dform "standard"}
     {-overwrite "t"}
     {-expand_form "t"}
     {-pages {add edit one index}}
@@ -55,6 +56,7 @@ ad_proc -public dtype::page::generate_pages {
         regsub -all {pretty_plural} $code $pretty_plural code
         regsub -all {__object_type} $code $object_type code
         regsub -all {table_name} $code $table_name code
+        regsub -all {__dform} $code $dform code
         set fd [open [file join $dest ${page}.tcl] w]
         puts $fd $code
         close $fd
