@@ -1,3 +1,4 @@
+
 ad_library {
     A library of functions to generate forms for acs_objects from stored 
     metadata.
@@ -89,7 +90,7 @@ ad_proc -public dtype::form::add_elements {
             set override(object_id) [db_nextval acs_object_id_seq]
         }
     }
-
+    
     template::element create $form ${prefix}dform_action \
         -widget hidden \
         -datatype text \
@@ -134,9 +135,6 @@ ad_proc -public dtype::form::process {
     Process a dynamic type form submission created by a function such as
     dtype::form::add_elements.  
 
-    @param object_id the object represented in the form.  If set the form is
-           assumed to be an edit form, otherwise it is assumed to be an object
-           create form
     @param object_type the object type whose metadata will define the form
     @param dform specifies the stored object form used
     @param dforms specifies the stored object form to use for particular object 
@@ -263,15 +261,11 @@ ad_proc -public dtype::form::process {
     set columns [list]
     set values [list]
 
-    # DAVEB since add_elements excludes acs_object attributes, we need
-    # to set some of them to reasonable defaults
-    # object_type
-    # what do we do about context_id? Its application specific
     # LEED context_id and similar fields should be passed in using the
     # -defaults { context_id 1234 } argument
     
     foreach type $types {
-
+        set missing_columns ""
         # Add attributes to $columns and associated bind variables to $values 
         # for each type
         if {[info exists type_dforms($type)]} {
@@ -280,6 +274,13 @@ ad_proc -public dtype::form::process {
             set type_dform $dform
         }
 
+        # Add attributes to $columns and associated bind variables to $values 
+        # for each type
+        if {[info exists type_dforms($type)]} {
+            set type_dform $type_dforms($type)
+        } else {
+            set type_dform $dform
+        }
         # get the attribute metadata for the object type
         dtype::get_attributes -name $type \
                   -start_with $type \
@@ -298,14 +299,26 @@ ad_proc -public dtype::form::process {
 ns_log debug "PROCESSING: $attributes(name)"
             if {[info exists widgets($attributes(attribute_id))]} {
 ns_log debug "PROCESSING: found $attributes(name) in form"
-
                 # first check for the attribute in the submitted form
-                set crv_$attributes(name) [template::element::get_values \
+                array set this_widget_info $widgets($attributes(attribute_id))
+                switch $this_widget_info(widget) {
+                    file {}
+                    checkbox -
+                    multiselect {
+                        set crv_$attributes(name) [template::element::get_values \
+                                                       $form \
+                                                       ${prefix}$attributes(name)]
+                    }
+                    default {
+                        set crv_$attributes(name) [template::element::get_value \
                                                $form \
                                                ${prefix}$attributes(name)]
-
+                    }
+                }
             } elseif {[info exists default($attributes(name))]} {
 ns_log debug "PROCESSING: using supplied default for $attributes(name)"
+
+            if {![string equal [set crv_$attributes(name)] ""]} {
 
                 # second check if the caller supplied a default value
                 set crv_$attributes(name) $default($attributes(name))
@@ -327,7 +340,6 @@ ns_log debug "PROCESSING: using existing value for $attributes(name) (ie. adding
                 lappend missing_columns $attributes(column_name)
 
             }
-
             if {![string equal [set crv_$attributes(name)] ""]} {
                 lappend columns $attributes(column_name)
 
@@ -356,17 +368,17 @@ ns_log debug "PROCESSING: using existing value for $attributes(name) (ie. adding
             if {$new_p} { 
                 db_dml insert_statement "
                     insert into ${type_info(table_name)}i 
-                    (item_id, [join $columns ", "])
+                    ([join [concat "item_id" "revision_id" $columns] ", "])
                     values 
-                    (:item_id, [join $values ", "])"
+                    ([join [concat ":item_id" ":object_id" $values] ", "])"
             } else { 
                 set latest_revision [content::item::get_latest_revision -item_id $item_id]
 
                 db_dml insert_statement "
                     insert into ${type_info(table_name)}i 
-                    (item_id, [join [concat $columns $missing_columns] ", "])
-                    select item_id, 
-                    [join [concat $values $missing_columns] ", "]
+                    ([join [concat "item_id" "revision_id" $columns $missing_columns] ", "])
+                    select  
+                    [join [concat ":item_id" ":object_id" $values $missing_columns] ", "]
                     from ${type_info(table_name)}i
                     where revision_id = $latest_revision"
             }
@@ -480,10 +492,10 @@ ad_proc -private dtype::form::add_type_elements {
         if {![template::util::is_true $widgets(is_required)]} {
           append element_create_cmd " -optional"
         }
-
+        
         if {![string equal $widgets(widget) file]} {
             # Append the initial value
-            if {[info exists override($widgets(attribute_name))]} {
+            if {[info exists override(${widgets(attribute_name)})]} {
                 append element_create_cmd " [dtype::form::value_switch \
                     -widget $widgets(widget) \
                     -value $override($widgets(attribute_name))]"
@@ -584,7 +596,8 @@ ad_proc -private dtype::form::add_type_elements {
                 append element_create_cmd " [dtype::form::value_switch \
                     -widget $widgets(widget) \
                     -value $override($widgets(attribute_name))]"
-            } elseif {!$new_p} {
+            } elseif {$new_p} {
+                # don't try to put content in the form element on new form
                 append element_create_cmd " [dtype::form::value_switch \
                     -widget $widgets(widget) \
                     -value $widgets(default_value)]"
@@ -612,13 +625,13 @@ ad_proc -private dtype::form::value_switch {
         file {}
         checkbox -
         multiselect {
-            return "-values $value"
+            return "-values \"$value\""
         }
         date {
             return "-value {[template::util::date::from_ansi $value]}"
         }
         default {
-            return "-value $value"
+            return "-value \"$value\""
         }
     }
 }
@@ -693,7 +706,6 @@ ad_proc -private dtype::form::parameter_value {
     if {[string equal $object_type ""]} {
         set object_type [db_string get_object_type {}]
     }
-
     switch $param(param_source) {
         eval {
             set value [eval $param(value)]
@@ -709,6 +721,11 @@ ad_proc -private dtype::form::parameter_value {
                     }
                     multilist {
                         set value [db_list_of_lists param_query $param(value)]
+                        # if the option list is empty, return
+                        # somethign the select widget can use
+                        if {$value eq ""} {
+                            set value [list [list]]
+                        }
                     }             
                 }
             }] {
@@ -725,7 +742,6 @@ ad_proc -private dtype::form::parameter_value {
         }
     }
     # end switch
-
     return $value
 }
 
@@ -781,14 +797,6 @@ ad_proc -public dtype::form::metadata::widgets {
     set metadata [dtype::form::metadata::widgets_list \
         -object_type $object_type \
         -dform $dform]
-ns_log notice "
-
-DB --------------------------------------------------------------------------------
-DB DAVE debugging procedure dtype::form::metadata::widgets
-DB --------------------------------------------------------------------------------
-DB object_type = '${object_type}'
-DB metadata = '${metadata}'
-DB --------------------------------------------------------------------------------"
     foreach widget $metadata {
         if {$multirow_p} {
             eval "template::multirow append \$multirow $widget"

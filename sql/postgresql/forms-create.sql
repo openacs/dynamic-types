@@ -442,7 +442,9 @@ begin
        and object_type = p_object_type;
 
     if NOT FOUND then
-        raise EXCEPTION ''-20000: Attribute %: % does not exist in dtype_widget.register_form_widget'', p_object_type, p_attribute_name;
+        if p_object_type <> ''acs_object'' and p_attribute_name <> ''object_id'' then
+            raise EXCEPTION ''-20000: Attribute %: % does not exist in dtype_widget.register_form_widget'', p_object_type, p_attribute_name;
+        end if;
     end if;
 
     -- Look for the form

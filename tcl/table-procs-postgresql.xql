@@ -15,12 +15,15 @@
   </rdbms>
   
   <partialquery name="dtype::table::get_db_type_map.get_type_map">
-    <querytext>int4 integer varchar string boolean boolean numeric number real
-      number float number integer integer serial integer money money
-      date date timestamp timestamp timestamptz timestamp "timestamp
-      with time zone" timestamp "timestamp without time zone"
-      timestamp time time_of_day "time without time zone" time_of_day
-      "time with time zone" time_of_day "" enumeration "" url "" email text text "" keyword</querytext>
+    <querytext>int4 integer varchar text boolean boolean numeric
+    number real number float number integer integer serial integer
+    money money date date timestamptz date
+    "timestamp with time zone" date
+    "timestamp without time zone" date
+    timestamp date
+    "time without time zone" time_of_day
+    "time with time zone" time_of_day  time time_of_day "" enumeration
+    "" url "" email "" keyword</querytext>
   </partialquery>
 
   <fullquery name="dtype::table::get_table_array.get_cols">
@@ -74,4 +77,30 @@
    and   t.table_name=st.relname
     </querytext>
   </fullquery>
+
+  <fullquery name="dtype::table::get_fk.get_fk">
+    <querytext>
+      select pa1.attname,
+        pa2.attname,
+        pc2.relname,
+        case when ot.object_type is null then 0 else 1 end
+        as object_p
+      from pg_attribute pa1,
+        pg_attribute pa2,
+        pg_constraint,
+        pg_class pc1,
+        pg_class pc2
+        left join
+        acs_object_types ot
+        on pc2.relname=ot.table_name
+      where conrelid=pc1.oid
+        and pc1.relname=:table
+        and contype='f'
+        and confrelid=pc2.oid
+        and pa2.attnum = any(pg_constraint.confkey)
+        and pa2.attrelid=pc2.oid
+        and pc1.oid=pa1.attrelid
+        and pa1.attnum=any(pg_constraint.conkey);
+      </querytext>
+    </fullquery>
 </queryset>

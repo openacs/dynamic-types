@@ -418,17 +418,9 @@ begin
     from acs_object_types 
    where object_type = p_object_type;
 
-  select (case when p_object_type = ''content_revision'' then 1 
-          else 0 end) into v_content_revision_p
-    from dual;
-
-  if not v_content_revision_p then
-    select count(*) > 0 into v_content_revision_p
-      from acs_object_type_supertype_map
-     where object_type = p_object_type
-       and ancestor_type = ''content_revision'';
-  end if;
-
+  select content_type__is_content_type(p_object_type)
+         into v_content_revision_p;
+    
   --
   -- start building rule code
   --
@@ -576,7 +568,6 @@ begin
   if not v_content_revision_p then
       execute ''create view '' || v_table_name ||
         ''i as select acs_objects.object_id, acs_objects.object_type,
-          acs_objects.package_id, acs_objects.title,
           acs_objects.context_id, acs_objects.security_inherit_p,
           acs_objects.creation_user, acs_objects.creation_date,
           acs_objects.creation_ip, acs_objects.last_modified,
@@ -590,7 +581,6 @@ begin
       -- updates on this view
       execute ''create view '' || v_table_name ||
         ''i as select acs_objects.object_id, acs_objects.object_type,
-          acs_objects.package_id, acs_objects.title as object_title,
           acs_objects.context_id, acs_objects.security_inherit_p,
           acs_objects.creation_user, acs_objects.creation_date,
           acs_objects.creation_ip, acs_objects.last_modified,
