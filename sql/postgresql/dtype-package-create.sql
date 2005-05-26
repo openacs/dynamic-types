@@ -3,6 +3,23 @@
 -- Based on cms code by Michael Pih (pihman@arsdigita.com) and 
 -- Karl Goldstein (karlg@arsdigita.com)
 
+-----------------------------
+-- timo:
+-- i am quite emberassed to do this, but the OCT wouldn't want it
+-- any other way, so here they have it. they'll gonna change it
+-- anyway, if this makes it into the core...
+-----------------------------
+
+create table dtype_attributes (
+  attribute_id     integer
+                   constraint dtype_attributes_pk
+                   primary key
+                   constraint dtype_attributes_fk
+                   references acs_attributes
+);
+
+
+
 select define_function_args('dynamic_type__create_type','object_type,supertype;acs_object,pretty_name,pretty_plural,table_name,id_column;XXX,name_method');
 
 create or replace function dynamic_type__create_type (varchar,varchar,varchar,varchar,varchar,varchar,varchar)
@@ -46,6 +63,10 @@ begin
     null,
     p_name_method
   );
+
+  update acs_object_types
+  set dynamic_p = true
+  where object_type = p_object_type;
 
   PERFORM dynamic_type__refresh_view(p_object_type);
 
@@ -206,12 +227,14 @@ begin
    null,
    null,
    p_default_value,
-   1,
+   0,
    1,
    p_sort_order,
    ''type_specific'',
    ''f''
  );
+
+ insert into dtype_attributes values (v_attr_id);
 
  PERFORM dynamic_type__refresh_view(p_object_type);
 
@@ -534,6 +557,10 @@ begin
        and ancestor_type = ''content_revision'';
   end if;
 
+ if v_content_revision_p then
+   PERFORM content_type__refresh_view(p_object_type);
+ else
+
   for join_rec in select ot2.table_name, ot2.id_column, tree_level(ot2.tree_sortkey) as level
                   from acs_object_types ot1, acs_object_types ot2
                   where ot2.object_type <> ''acs_object''                       
@@ -594,6 +621,8 @@ begin
   end if;
 
   PERFORM dynamic_type__refresh_trigger(p_object_type);
+
+ end if;
 
   return 0; 
 end;' language 'plpgsql';

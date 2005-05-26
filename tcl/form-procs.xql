@@ -1,36 +1,45 @@
 <?xml version="1.0"?>
 <queryset>
 
+<fullquery name="dtype::form::add_elements.check_object_existence"> 
+	<querytext>
+	    select object_id
+	    from acs_objects
+	    where object_id = :object_id
+	</querytext>
+</fullquery>
+
 <fullquery name="dtype::form::process.update_content"> 
 	<querytext>
       update cr_revisions set content = (select content from cr_revisions where revision_id = :prev_revision_id)
 	</querytext>
 </fullquery>
 
-<fullquery name="dtype::form::metadata::widgets_list.select_dform_metadata"> 
+<fullquery name="dtype::form::metadata::widgets_list.select_dform_metadata">
 	<querytext>
-      select attribute_id,
-             object_type,
-             table_name,
-             attribute_name,
-             pretty_name,
-             pretty_plural,
-             sort_order,
-             datatype,
-             default_value,
-             min_n_values,
-             max_n_values,
-             storage,
-             static_p,
-             column_name,
-             form_id,
-             form_name,
-             element_id,
-             widget,
-             is_required
+      select attribute_id, object_type, table_name, attribute_name,
+             pretty_name, pretty_plural, sort_order, datatype,
+             default_value, min_n_values, max_n_values, storage,
+             static_p, column_name, form_id, form_name, element_id,
+             widget, is_required
         from dtype_form_elements_all
        where object_type = :object_type
          and form_name = :dform
+    order by sort_order
+	</querytext>
+</fullquery>
+
+<fullquery name="dtype::form::metadata::widgets_list.select_dform_metadata_dynamic">
+	<querytext>
+      select e.attribute_id, object_type, table_name, attribute_name,
+             pretty_name, pretty_plural, sort_order, datatype,
+             default_value, min_n_values, max_n_values, storage,
+             static_p, column_name, form_id, form_name, element_id,
+             widget, is_required
+        from dtype_form_elements_all e, dtype_attributes a
+       where object_type = :object_type
+         and form_name = :dform
+	 and e.attribute_id = a.attribute_id
     order by sort_order
 	</querytext>
 </fullquery>
@@ -114,6 +123,16 @@
 	<querytext>
 
 	$param(value)
+
+	</querytext>
+</fullquery>
+
+<fullquery name="dtype::form::get_object_data.get_type_info">
+	<querytext>
+
+	select table_name, id_column
+    from acs_object_types
+   where object_type = :object_type
 
 	</querytext>
 </fullquery>

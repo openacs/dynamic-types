@@ -41,6 +41,8 @@ ad_proc -public dtype::form::add_elements {
     {-overrides {}}
     {-cr_widget textarea}
     {-cr_widget_options {}}
+    {-exclude {}}
+    {-exclude_static:boolean}
 } {
     Adds the elements of the specified object types dynamic form and all of its
     supertypes dynamic forms to the specified template form.
@@ -70,22 +72,23 @@ ad_proc -public dtype::form::add_elements {
         template::form create $form
     }
 
+    if {![empty_string_p $object_id]} {
+	set object_id [db_string check_object_existence {} -default ""]
+    }
+
     set types [dtype::form::types_list \
                    -object_id $object_id \
                    -object_type $object_type]
     set object_type [lindex $types 0]
-    
+
     set action edit
-    
     array set type_dforms $dforms
     array set override $overrides
 
-    if {![string equal $object_id ""] &&
-        [info exists override(object_id)]} {
+    if {![empty_string_p $object_id] && [info exists override(object_id)]} {
         error "Cannot override object_id for an existing object"
-    } elseif {[string equal $object_id ""]} {
+    } elseif {[empty_string_p $object_id]} {
         set action new
-
         if {![info exists override(object_id)]} {
             set override(object_id) [db_nextval acs_object_id_seq]
         }
@@ -117,20 +120,26 @@ ad_proc -public dtype::form::add_elements {
             -form $form \
             -overrides [array get override] \
             -cr_widget $cr_widget \
-            -cr_widget_options $cr_widget_options
+            -cr_widget_options $cr_widget_options \
+	    -exclude_static_p $exclude_static_p \
+	    -exclude $exclude
     }
 }
 
 ad_proc -public dtype::form::process {
     {-prefix ""}
     {-object_type ""}
+    {-object_id ""}
     {-dform implicit}
     {-dforms {acs_object default content_revision default}}
     {-form:required}
     {-defaults {}}
+    {-default_fields {}}
     {-cr_widget textarea}
     {-cr_storage file}
     {-cr_mime_filters {text/html dtype::mime_filters::text_html}}
+    {-exclude {}}
+    {-exclude_static:boolean}
 } {
     Process a dynamic type form submission created by a function such as
     dtype::form::add_elements.  
@@ -143,6 +152,7 @@ ad_proc -public dtype::form::process {
     @param prefix the prefix for each attribute name used
     @param defaults default values to use for attributes (this should be used
                                                           to supply values for context_id and the like)
+    @param default_fields default columns with values to be used for db insert
     @param cr_widget the input method for the content 
     @param cr_storage the content repository storage method
     
@@ -153,7 +163,9 @@ ad_proc -public dtype::form::process {
     # Pull the object_id out of the form - technically a acs_object dform
     # could be created that doesn't include object_id as a field in which
     # case this would just break.
-    set object_id [template::element::get_value $form ${prefix}object_id]
+    if {[empty_string_p $object_id]} {
+	set object_id [template::element::get_value $form ${prefix}object_id]
+    }
 
     # Pull the action out of the form
     set action [template::element::get_value $form ${prefix}dform_action]
@@ -177,22 +189,36 @@ ad_proc -public dtype::form::process {
     #######################################################
     # Setup default values for object creation
     #
-    if {$new_p} {
-        set default(object_type) $object_type
-
-        if {![info exists default(creation_user)]} {
-            set default(creation_user) [ad_conn user_id]
-        }
-
-        if {![info exists default(creation_ip)]} {
-            set default(creation_ip) [ad_conn peeraddr]
-        }
+    set default(object_type) $object_type
+    if {![info exists default(creation_user)]} {
+	set default(creation_user) [ad_conn user_id]
+    }
+    if {![info exists default(creation_ip)]} {
+	set default(creation_ip) [ad_conn peeraddr]
+    }
+    if {![info exists default(context_id)]} {
+	set default(context_id) [db_null]
+    }
+    if {![info exists default(package_id)]} {
+	set default(package_id) [ad_conn package_id]
+    }
+    if {![info exists default(parent_id)]} {
+	set default(parent_id) [db_null]
+    }
+    if {![info exists default(nls_language)]} {
+	set default(nls_language) [db_null]
+    }
+    if {![info exists default(publish_date)]} {
+	set default(publish_date) [db_null]
     }
     
     #######################################################
     # Content Repository specific preparations
     #
     if {$content_type_p} {
+	if {![info exists default(mime_type)]} {
+	    set default(mime_type) "text/plain"
+	}
         if {$new_p} {
             # We are creating an initial revision of a content item (ie. a new 
             # instance of a subtype of content_revision).  We need to first 
@@ -204,6 +230,8 @@ ad_proc -public dtype::form::process {
                                          locale [db_null] \
                                          parent_id [db_null] \
                                          content_type $object_type \
+                                         context_id [db_null] \
+                                         package_id [ad_conn package_id] \
                                          creation_user [ad_conn user_id] \
                                          creation_ip [ad_conn peeraddr] \
                                          storage_type $cr_storage]
@@ -249,10 +277,6 @@ ad_proc -public dtype::form::process {
 
             set default(mime_type) [ns_guesstype $default(filename)]
         }
-
-        # Populate content revision fields with default values
-        set default(nls_language) [db_null]
-        set default(publish_date) [db_null]
     }
 
     #######################################################
@@ -260,6 +284,25 @@ ad_proc -public dtype::form::process {
     #
     set columns [list]
     set values [list]
+
+    # set default fields with provided values
+    foreach var_spec $default_fields {
+	set var_name [lindex $var_spec 0]
+	if {[llength $var_spec] > 1} {
+	    set var_value [uplevel subst \{[lindex $var_spec 1]\}]
+	} else {
+	    upvar 1 $var_name upvar_variable
+	    if {[info exists upvar_variable]} {
+		set crvd_$var_name $upvar_variable
+		set var_value ":crvd_$var_name"
+	    } else {
+		set var_value "null"
+	    }
+	}
+	lappend columns $var_name
+	lappend values $var_value
+    }
+
 
     # LEED context_id and similar fields should be passed in using the
     # -defaults { context_id 1234 } argument
@@ -274,13 +317,6 @@ ad_proc -public dtype::form::process {
             set type_dform $dform
         }
 
-        # Add attributes to $columns and associated bind variables to $values 
-        # for each type
-        if {[info exists type_dforms($type)]} {
-            set type_dform $type_dforms($type)
-        } else {
-            set type_dform $dform
-        }
         # get the attribute metadata for the object type
         dtype::get_attributes -name $type \
             -start_with $type \
@@ -288,147 +324,155 @@ ad_proc -public dtype::form::process {
 
         dtype::form::metadata::widgets -object_type $type \
             -dform $type_dform \
+	    -exclude_static_p $exclude_static_p \
             -indexed_array widgets
 
         set size [template::multirow size attributes]
         for {set i 1} {$i <= $size} {incr i} {
             template::multirow get attributes $i
             
+	    # exclude specified widgets
+            if {[lsearch -exact $exclude $attributes(name)] > -1} {
+		continue
+	    }
+
             set crv_$attributes(name) "" 
 
-            ns_log debug "PROCESSING: $attributes(name)"
+            ns_log notice "PROCESSING: $attributes(name)"
             if {[info exists widgets($attributes(attribute_id))]} {
-                ns_log debug "PROCESSING: found $attributes(name) in form"
+                ns_log notice "PROCESSING: found $attributes(name) in form"
                 # first check for the attribute in the submitted form
                 array set this_widget_info $widgets($attributes(attribute_id))
                 switch $this_widget_info(widget) {
                     file {}
-                    checkbox -
-                    multiselect {
-                        set crv_$attributes(name) [template::element::get_values \
-                                                       $form \
-                                                       ${prefix}$attributes(name)]
+		    checkbox - multiselect {
+                        set crv_$attributes(name) [template::element::get_values $form ${prefix}$attributes(name)]
                     }
                     default {
-                        set crv_$attributes(name) [template::element::get_value \
-                                                       $form \
-                                                       ${prefix}$attributes(name)]
+                        set crv_$attributes(name) [template::element::get_value $form ${prefix}$attributes(name)]
                     }
                 }
             } elseif {[info exists default($attributes(name))]} {
                 ns_log debug "PROCESSING: using supplied default for $attributes(name)"
-
-                if {![string equal [set crv_$attributes(name)] ""]} {
-
+                if {[empty_string_p [set crv_$attributes(name)]]} {
                     # second check if the caller supplied a default value
                     set crv_$attributes(name) $default($attributes(name))
+		}
 
-                } elseif {$new_p &&
-                          ![string equal $attributes(default_value) ""]} {
-                    ns_log debug "PROCESSING: using attribute default for $attributes(name)"
+	    } elseif {$new_p && ![empty_string_p $attributes(default_value)]} {
+		ns_log debug "PROCESSING: using attribute default for $attributes(name)"
 
-                    # if we are inserting a new object then use the attributes 
-                    # default value
-                    set crv_$attributes(name) $attributes(default_value)
+		# if we are inserting a new object then use the attributes 
+		# default value
+		set crv_$attributes(name) $attributes(default_value)
 
-                } elseif {!$new_p} {
-                    ns_log debug "PROCESSING: using existing value for $attributes(name) (ie. adding it to missing columns)"
+	    } elseif {!$new_p} {
+		ns_log debug "PROCESSING: using existing value for $attributes(name) (ie. adding it to missing columns)"
 
-                    # append the column to missing columns so that the value
-                    # is copied from the previous revision when we are dealing
-                    # with content types
-                    lappend missing_columns $attributes(column_name)
+		# append the column to missing columns so that the value
+		# is copied from the previous revision when we are dealing
+		# with content types
+		if {[lsearch -exact {creation_date last_modified modifying_ip} $attributes(name)] == -1} {
+		    lappend missing_columns $attributes(column_name)
+		}
+	    }
 
-                }
-                if {![string equal [set crv_$attributes(name)] ""]} {
-                    lappend columns $attributes(column_name)
+	    if {![empty_string_p [set crv_$attributes(name)]] && [lsearch -exact $columns $attributes(name)] == -1} {
+		lappend columns $attributes(column_name)
 
-                    # cast the value to the appropriate datatype
-                    switch $attributes(datatype) {
-                        date -
-                        time_of_day -
-                        timestamp {
-                            lappend values [template::util::date::get_property \
-                                                sql_date \
-                                                [lindex [set crv_$attributes(name)] 0]]
-                        }
-                        default {
-                            lappend values ":crv_$attributes(name)"
-                        }
-                    }
-                }
-            }
-        }
-
-        #######################################################
-        # Perform the insert or update as appropriate
-        #
-        if {$content_type_p} {
-            db_transaction {
-                if {$new_p} { 
-                    db_dml insert_statement "
-                    insert into ${type_info(table_name)}i 
-                    ([join [concat "item_id" "revision_id" $columns] ", "])
-                    values 
-                    ([join [concat ":item_id" ":object_id" $values] ", "])"
-                } else { 
-                    set latest_revision [content::item::get_latest_revision -item_id $item_id]
-
-                    db_dml insert_statement "
-                    insert into ${type_info(table_name)}i 
-                    ([join [concat "item_id" "revision_id" $columns $missing_columns] ", "])
-                    select  
-                    [join [concat ":item_id" ":object_id" $values $missing_columns] ", "]
-                    from ${type_info(table_name)}i
-                    where revision_id = $latest_revision"
-                }
-
-                set revision_ids [db_list get_revision_ids {}]
-                set revision_id [lindex $revision_ids 0]
-                set prev_revision_id [lindex $revision_ids 1]
-
-                if {[string equal $cr_widget none] ||
-                    ([string equal $cr_widget file] && 
-                     [string equal $tmp_file ""])} {
-
-                    # either a content widget wasn't included in the form or
-                    # no new file was uploaded, so we want to preserve the previous
-                    # revisions content
-                    if {![string equal $prev_revision_id ""]} {
-                        db_dml update_content {}
-                    }
-                } else {
-                    dtype::upload_content -item_id $item_id \
-                        -revision_id $revision_id \
-                        -file $tmp_file \
-                        -storage_type $cr_storage
-
-                    ns_unlink $tmp_file
-                }
-            }
-        } else {
-            if {$new_p} { 
-                db_dml insert_statement "
-                insert into ${type_info(table_name)}i ([join $columns ", "])
-                values ([join $values ", "])"
-            } else {
-                set updates [list]
-
-                set all_columns [concat $columns $missing_columns]
-                set all_values [concat $values $missing_columns]
-
-                set length [llength $all_columns]
-                for {set i 0} {$i < $length} {incr i} {
-                    lappend updates "[lindex $all_columns $i] = [lindex $all_values $i]"
-                }
-
-                db_dml update_statement "
-                update ${type_info(table_name)}i 
-                set [join $updates ", "]
-                where $type_info(id_column) = :object_id"
+		# cast the value to the appropriate datatype
+		switch $attributes(datatype) {
+		    date - time_of_day - timestamp {
+			lappend values [template::util::date::get_property sql_date [lindex [set crv_$attributes(name)] 0]]
+		    }
+		    default {
+			lappend values ":crv_$attributes(name)"
+		    }
+		}
             }
         }
     }
+
+    #######################################################
+    # Perform the insert or update as appropriate
+    #
+
+    # title, description, object_title
+    if {$content_type_p} {
+	set pos [lsearch -exact $columns package_id]
+	set columns [lreplace $columns $pos $pos object_package_id]
+	set columns [concat "item_id" "revision_id" $columns]
+	set values [concat ":item_id" ":object_id" $values]
+
+	db_transaction {
+	    if {$new_p} { 
+		db_dml insert_statement "
+                    insert into ${type_info(table_name)}i 
+                    ([join $columns ", "])
+                    values 
+                    ([join $values ", "])"
+	    } else { 
+		set latest_revision [content::item::get_latest_revision -item_id $item_id]
+		set object_id [db_nextval acs_object_id_seq]
+
+		db_dml insert_statement "
+                    insert into ${type_info(table_name)}i 
+                    ([join [concat $columns $missing_columns] ", "])
+                    select  
+                    [join [concat $values $missing_columns] ", "]
+                    from ${type_info(table_name)}i
+                    where revision_id = $latest_revision"
+	    }
+
+	    content::item::set_live_revision -revision_id $object_id
+
+	    set revision_ids [db_list get_revision_ids {}]
+	    set revision_id [lindex $revision_ids 0]
+	    set prev_revision_id [lindex $revision_ids 1]
+
+	    if {[string equal $cr_widget none] ||
+		([string equal $cr_widget file] && 
+		 [string equal $tmp_file ""])} {
+
+		# either a content widget wasn't included in the form or
+		# no new file was uploaded, so we want to preserve the previous
+		# revisions content
+		if {![string equal $prev_revision_id ""]} {
+		    db_dml update_content {}
+		}
+	    } else {
+		dtype::upload_content -item_id $item_id \
+		    -revision_id $revision_id \
+		    -file $tmp_file \
+		    -storage_type $cr_storage
+
+		ns_unlink $tmp_file
+	    }
+	}
+    } else {
+	if {$new_p} { 
+	    db_dml insert_statement "
+                insert into ${type_info(table_name)}i ([join $columns ", "])
+                values ([join $values ", "])"
+	} else {
+	    set updates [list]
+
+	    set all_columns [concat $columns $missing_columns]
+	    set all_values [concat $values $missing_columns]
+
+	    set length [llength $all_columns]
+	    for {set i 0} {$i < $length} {incr i} {
+		lappend updates "[lindex $all_columns $i] = [lindex $all_values $i]"
+	    }
+
+	    db_dml update_statement "
+                update ${type_info(table_name)}i 
+                set [join $updates ", "]
+                where $type_info(id_column) = :object_id"
+	}
+    }
+
+    return $object_id
 }
 
 ad_proc -private dtype::form::add_type_elements {
@@ -441,6 +485,8 @@ ad_proc -private dtype::form::add_type_elements {
     {-overrides {}}
     {-cr_widget textarea}
     {-cr_widget_options {}}
+    {-exclude_static_p 0}
+    {-exclude {}}
 } {
     Adds the elements of the specified or implicit object form to the specified
     template form.  
@@ -456,12 +502,14 @@ ad_proc -private dtype::form::add_type_elements {
     array set override $overrides
 
     set new_p [string equal $object(object_id) ""]
+    ns_log notice "\#\#\# new_p: $new_p"
 
     ############################################################
     # Get the widget metadata
     #
     dtype::form::metadata::widgets -object_type $object_type \
         -dform $dform \
+	-exclude_static_p $exclude_static_p \
         -multirow widgets
     
     dtype::form::metadata::params -object_type $object_type \
@@ -478,6 +526,11 @@ ad_proc -private dtype::form::add_type_elements {
         template::multirow get widgets $w 
         set html_options [list]
         set widget_options [list]
+
+	# exclude specified widgets
+	if {[lsearch -exact $exclude $widgets(attribute_name)] > -1} {
+	    continue
+	}
 
         # set the default values for overridable options
         set overridables(label) $widgets(pretty_name)
@@ -751,6 +804,7 @@ ad_proc -public dtype::form::metadata::widgets {
     {-dform:required}
     {-multirow {}}
     {-indexed_array {}}
+    {-exclude_static_p 0}
 } {
     Returns the widget metadata for the specified object_type and dform
     as either a multirow or an indexed array.
@@ -797,7 +851,9 @@ ad_proc -public dtype::form::metadata::widgets {
 
     set metadata [dtype::form::metadata::widgets_list \
                       -object_type $object_type \
+		      -exclude_static_p $exclude_static_p \
                       -dform $dform]
+
     foreach widget $metadata {
         if {$multirow_p} {
             eval "template::multirow append \$multirow $widget"
@@ -815,6 +871,7 @@ ad_proc -private dtype::form::metadata::widgets_list {
     {-no_cache:boolean}
     {-object_type:required}
     {-dform:required}
+    {-exclude_static_p 0}
 } {
     Returns a list of lists with the widget metadata for the specified 
     object_type and dform.
@@ -824,9 +881,13 @@ ad_proc -private dtype::form::metadata::widgets_list {
     @param no_cache does not attempt to use the cache to retrieve the info
 } {
     if {$no_cache_p} {
-        return [db_list_of_lists select_dform_metadata {}]
+	if {$exclude_static_p} {
+	    return [db_list_of_lists select_dform_metadata_dynamic {}]
+	} else {
+	    return [db_list_of_lists select_dform_metadata {}]
+	}
     } else {
-        return [util_memoize "dtype::form::metadata::widgets_list -no_cache -object_type \"$object_type\" -dform \"$dform\""]
+        return [util_memoize "dtype::form::metadata::widgets_list -no_cache -object_type \"$object_type\" -dform \"$dform\" -exclude_static_p $exclude_static_p"]
     }
 }
 

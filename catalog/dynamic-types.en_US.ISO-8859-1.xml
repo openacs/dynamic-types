@@ -7,7 +7,25 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <message_catalog package_key="dynamic-types" package_version="0.1" locale="en_US" charset="ISO-8859-1">
 
+  <msg key="add">Add</msg>
+  <msg key="add_attribute">Add a Dynamic Attribute</msg>
+  <msg key="add_form">Add a Form</msg>
+  <msg key="attribute">Attribute</msg>
+  <msg key="attribute_add">Add Attribute</msg>
+  <msg key="attribute_default">Default Value</msg>
+  <msg key="attribute_edit">Edit Attribute</msg>
+  <msg key="attribute_name">Attribute Name</msg>
+  <msg key="attribute_name_help">This name must be lower case, contain only letters and underscores, and contain no spaces. If not specified one will be generated for you.</msg>
+  <msg key="attributes">Attributes</msg>
   <msg key="content">Content</msg>
+  <msg key="datatype">Datatype</msg>
+  <msg key="dtypes_admin">Dynamic Types Management</msg>
+  <msg key="dynamic_types">Dynamic Types</msg>
+  <msg key="form_name">Form Name</msg>
+  <msg key="forms">Forms</msg>
+  <msg key="object_type">Object Type</msg>
+  <msg key="pretty_name">Pretty Name</msg>
+  <msg key="pretty_plural">Pretty Plural</msg>
   <msg key="must_supply_either_multirow_or_indexed_array">you must supply either -multirow or -indexed_array</msg>
   <msg key="unable_to_retrieve_param">unable to retrieve widget parameter %name% for attribute %attribute_id% - returning "" as parameter value</msg>
 

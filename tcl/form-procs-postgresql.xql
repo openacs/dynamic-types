@@ -95,7 +95,7 @@
                                  :item_locale,
                                  now(),
                                  :item_creation_user,
-                                 null,
+                                 :item_context_id,
                                  :item_creation_ip,
                                  'content_item',
                                  :item_content_type,
@@ -104,7 +104,8 @@
                                  'text/plain',
                                  null,
                                  null,
-                                 :cr_storage)
+                                 :cr_storage,
+				 :item_package_id)
       </querytext>
 </fullquery>
 

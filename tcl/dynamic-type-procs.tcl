@@ -26,14 +26,16 @@ ad_proc -public dtype::get_object {
 } {
     Populates array with the data for the object specified.
 } {
+    set attributes_list [dtype::get_attributes_list -name $object_type -start_with acs_object -storage_types type_specific]
+
     upvar $array local
-
-    set attributes_list [dtype::get_attributes -name $object_type -list t attributes]
-
     set columns [list]
 
     foreach attribute_info $attributes_list {
         foreach {name pretty_name attribute_id datatype table_name column_name default_value min_n_values max_n_values static_p} $attribute_info break
+	if {$column_name == "package_id"} {
+	    continue
+	}
         switch $datatype {
               date -
               timestamp -
@@ -67,6 +69,7 @@ ad_proc -public dtype::create {
         set name_method [db_null]
     }
 
+    ns_log Debug "DYNAMIC TYPES: Creating Object $name with Pretty Name $pretty_name"
     db_exec_plsql create_type {}
 }
 
@@ -207,6 +210,7 @@ ad_proc -public dtype::edit_attribute {
     {-object_type:required}
     {-pretty_name:required}
     {-pretty_plural:required}
+    {-default_value ""}
 } {
     Sets the details of an attribute.
 } {
@@ -372,11 +376,11 @@ ad_proc -public dtype::create_form {
     
     # get default widgets
     foreach type $types {
-                    if {[info exists type_dforms($type)]} {
-                set type_dform $type_dforms($type)
-            } else {
-                set type_dform "implicit"
-            }
+	if {[info exists type_dforms($type)]} {
+	    set type_dform $type_dforms($type)
+	} else {
+	    set type_dform "implicit"
+	}
         
         dtype::form::metadata::widgets -object_type $type \
                                    -dform $type_dform \

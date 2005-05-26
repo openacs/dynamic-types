@@ -5,9 +5,9 @@
     <package-name>Dynamic Object Type</package-name>
     <pretty-plural>Dynamic Object Types</pretty-plural>
     <initial-install-p>f</initial-install-p>
-    <singleton-p>t</singleton-p>
+    <singleton-p>f</singleton-p>
 
-    <version name="0.1" url="http://openacs.org/repository/download/apm/dynamic-types-0.1.apm">
+    <version name="0.2d1" url="http://openacs.org/repository/download/apm/dynamic-types-0.2d1.apm">
         <owner url="mailto:admin@xarg.net">Rob Denison</owner>
         <owner url="mailto:admin@xarg.net">Lee Denison</owner>
 
@@ -15,9 +15,9 @@
         <vendor url="http://xarg.net">Xarg</vendor>
         <description format="text/plain">Allows creation, manipulation and ui generation of dynamically generated object types.</description>
 
-        <provides url="dynamic-types" version="0.1"/>
-        <requires url="acs-kernel" version="5.1.0"/>
-        <requires url="acs-content-repository" version="5.1.0"/>
+        <provides url="dynamic-types" version="0.2d1"/>
+        <requires url="acs-kernel" version="5.2.0d9"/>
+        <requires url="acs-content-repository" version="5.2.0d15"/>
 
         <callbacks>
         </callbacks>
