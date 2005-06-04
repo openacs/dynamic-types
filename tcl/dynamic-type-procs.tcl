@@ -23,10 +23,11 @@ ad_proc -public dtype::get_object {
     {-object_id:required}
     {-object_type:required}
     {-array:required}
+    {-exclude_static:boolean}
 } {
     Populates array with the data for the object specified.
 } {
-    set attributes_list [dtype::get_attributes_list -name $object_type -start_with acs_object -storage_types type_specific]
+    set attributes_list [dtype::get_attributes_list -name $object_type -start_with acs_object -storage_types type_specific -exclude_static_p $exclude_static_p]
 
     upvar $array local
     set columns [list]
@@ -180,15 +181,20 @@ ad_proc -private dtype::get_attributes_list {
     {-name:required}
     {-start_with:required}
     {-storage_types:required}
+    {-exclude_static_p 0}
 } {
     Gets all the attributes of a object_type.  
 } {
     if {$no_cache_p} {
         set storage_clause "and a.storage in ('[join $storage_types "', '"]')"
 
-        return [db_list_of_lists select_attributes {}]
+	if {$exclude_static_p} {
+	    return [db_list_of_lists select_attributes_dynamic {}]
+	} else {
+	    return [db_list_of_lists select_attributes {}]
+	}
     } else {
-        return [util_memoize "dtype::get_attributes_list -no_cache -name \"$name\" -start_with \"$start_with\" -storage_types \"$storage_types\""]
+        return [util_memoize "dtype::get_attributes_list -no_cache -name \"$name\" -start_with \"$start_with\" -storage_types \"$storage_types\" -exclude_static_p $exclude_static_p"]
     }
 }
 

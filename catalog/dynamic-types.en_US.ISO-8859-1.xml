@@ -9,6 +9,7 @@
 
   <msg key="add">Add</msg>
   <msg key="add_attribute">Add a Dynamic Attribute</msg>
+  <msg key="add_element">Add a Form element</msg>
   <msg key="add_form">Add a Form</msg>
   <msg key="attribute">Attribute</msg>
   <msg key="attribute_add">Add Attribute</msg>
@@ -21,12 +22,19 @@
   <msg key="datatype">Datatype</msg>
   <msg key="dtypes_admin">Dynamic Types Management</msg>
   <msg key="dynamic_types">Dynamic Types</msg>
+  <msg key="edit_form">Edit Form Name</msg>
+  <msg key="elements">Form elements</msg>
   <msg key="form_name">Form Name</msg>
+  <msg key="form_one">Form "%form_name%"</msg>
   <msg key="forms">Forms</msg>
+  <msg key="must_supply_either_multirow_or_indexed_array">you must supply either -multirow or -indexed_array</msg>
   <msg key="object_type">Object Type</msg>
   <msg key="pretty_name">Pretty Name</msg>
   <msg key="pretty_plural">Pretty Plural</msg>
-  <msg key="must_supply_either_multirow_or_indexed_array">you must supply either -multirow or -indexed_array</msg>
+  <msg key="remove">Remove</msg>
+  <msg key="remove_element">Remove Element from Form</msg>
+  <msg key="required_p">Required?</msg>
   <msg key="unable_to_retrieve_param">unable to retrieve widget parameter %name% for attribute %attribute_id% - returning "" as parameter value</msg>
+  <msg key="widget">Widget</msg>
 
 </message_catalog>

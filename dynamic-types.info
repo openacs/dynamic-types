@@ -7,7 +7,7 @@
     <initial-install-p>f</initial-install-p>
     <singleton-p>f</singleton-p>
 
-    <version name="0.2d1" url="http://openacs.org/repository/download/apm/dynamic-types-0.2d1.apm">
+    <version name="0.2d2" url="http://openacs.org/repository/download/apm/dynamic-types-0.2d2.apm">
         <owner url="mailto:admin@xarg.net">Rob Denison</owner>
         <owner url="mailto:admin@xarg.net">Lee Denison</owner>
 
@@ -15,9 +15,10 @@
         <vendor url="http://xarg.net">Xarg</vendor>
         <description format="text/plain">Allows creation, manipulation and ui generation of dynamically generated object types.</description>
 
-        <provides url="dynamic-types" version="0.2d1"/>
+        <provides url="dynamic-types" version="0.2d2"/>
         <requires url="acs-kernel" version="5.2.0d9"/>
         <requires url="acs-content-repository" version="5.2.0d15"/>
+        <requires url="acs-translations" version="0.1d1"/>
 
         <callbacks>
         </callbacks>

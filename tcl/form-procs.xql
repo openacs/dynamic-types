@@ -160,4 +160,23 @@ order by creation_date desc
 	</querytext>
 </fullquery>
 
+<fullquery name="dtype::form::new.insert_form">
+  <querytext>
+
+	insert into dtype_forms (form_id, name, object_type)
+	values (:form_id, :form_name, :object_type)
+
+  </querytext>
+</fullquery>
+
+<fullquery name="dtype::form::edit.update_form">
+  <querytext>
+
+	update dtype_forms
+	set name = :form_name
+	where form_id = :form_id
+
+  </querytext>
+</fullquery>
+
 </queryset>

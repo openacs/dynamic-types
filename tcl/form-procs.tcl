@@ -502,7 +502,6 @@ ad_proc -private dtype::form::add_type_elements {
     array set override $overrides
 
     set new_p [string equal $object(object_id) ""]
-    ns_log notice "\#\#\# new_p: $new_p"
 
     ############################################################
     # Get the widget metadata
@@ -519,6 +518,7 @@ ad_proc -private dtype::form::add_type_elements {
     set widget_count [template::multirow size widgets]
     set param_count [template::multirow size params]
 
+    set default_locale [lang::system::site_wide_locale]
     set p 1
 
     # Generate form elements for each attribute / widget
@@ -533,7 +533,13 @@ ad_proc -private dtype::form::add_type_elements {
 	}
 
         # set the default values for overridable options
-        set overridables(label) $widgets(pretty_name)
+	set overridables(help_text) "[_ acs-translations.$widgets(object_type)\_$widgets(attribute_name)\_help]"
+	set message_key "acs-translations.$widgets(object_type)\_$widgets(attribute_name)"
+	if {[lang::message::message_exists_p $default_locale $message_key]} {
+	    set overridables(label) "[_ $message_key]"
+	} else {
+	    set overridables(label) $widgets(pretty_name)
+	}
 
         # Create the main element create line
         set element_create_cmd "template::element create \
@@ -1138,4 +1144,37 @@ ad_proc -public dtype::form::metadata::delete_attribute_widgets {
             -attribute_name $attribute_name \
             -dform $dform
     }
+}
+
+ad_proc -public dtype::form::new {
+    {-object_type:required}
+    {-form_name:required}
+    {-form_id ""}
+} {
+    Create new dynamic form
+} {
+    if {[empty_string_p $form_id]} {
+	set form_id [db_nextval t_dtype_seq]
+    }
+
+    db_dml insert_form {}
+
+    set event(object_type) $object_type
+    set event(dform) $form_name
+    set event(action) created
+    util::event::fire -event dtype.form event
+}
+
+ad_proc -public dtype::form::edit {
+    {-form_name:required}
+    {-form_id:required}
+} {
+    Update dynamic form name
+} {
+    db_dml update_form {}
+
+    set event(object_type) $object_type
+    set event(dform) $form_name
+    set event(action) updated
+    util::event::fire -event dtype.form event
 }
