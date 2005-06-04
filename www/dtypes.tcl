@@ -15,6 +15,7 @@ list::create \
     -multirow dtypes \
     -key object_type \
     -row_pretty_plural "[_ dynamic-types.dynamic_types]" \
+    -bulk_actions [list "[_ dynamic-types.export]" dtypes-code "[_ dynamic-types.code_export]"] \
     -elements {
         pretty_name {
             label "[_ dynamic-types.pretty_name]"
