@@ -10,6 +10,9 @@ ad_page_contract {
     {element_id:multiple}
 }
 
+set user_id [auth::require_login]
+permission::require_permission -object_id [ad_conn package_id] -privilege admin
+
 db_1row get_form_name {}
 
 db_transaction {

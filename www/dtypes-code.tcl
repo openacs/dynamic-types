@@ -8,6 +8,9 @@ ad_page_contract {
     {object_type:multiple}
 }
 
+set user_id [auth::require_login]
+permission::require_permission -object_id [ad_conn package_id] -privilege admin
+
 set page_title "[_ dynamic-types.code_export]"
 set context [list $page_title]
 

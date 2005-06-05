@@ -8,6 +8,9 @@ ad_page_contract {
     {object_type:notnull}
 }
 
+set user_id [auth::require_login]
+permission::require_permission -object_id [ad_conn package_id] -privilege admin
+
 acs_object_type::get -object_type $object_type -array type_info
 
 set page_title $type_info(pretty_name)
