@@ -41,16 +41,19 @@ list::create \
         }
         widget {
             label "[_ dynamic-types.widget]"
+            link_url_eval $param_url
         }
         is_required {
             label "[_ dynamic-types.required_p]"
         }
     } -filters {
         object_type {}
+	form_id {}
     }
 
-db_multirow -extend { element_url } elements get_elements {} {
+db_multirow -extend { element_url param_url } elements get_elements {} {
     set element_url [export_vars -base element {object_type form_id element_id}]
+    set param_url [export_vars -base element-params {object_type form_id element_id}]
     set is_required [ad_decode $is_required t "[_ acs-kernel.common_Yes]" "[_ acs-kernel.common_no]"]
 }
 

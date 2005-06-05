@@ -27,6 +27,16 @@
   </querytext>
 </fullquery>
 
+<fullquery name="get_widgets">
+  <querytext>
+
+    select widget, widget
+    from dtype_widgets
+    order by lower(widget)
+
+  </querytext>
+</fullquery>
+
 <fullquery name="attribute_widget">
   <querytext>
 

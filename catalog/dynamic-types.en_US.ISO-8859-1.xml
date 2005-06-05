@@ -32,6 +32,19 @@
   <msg key="forms">Forms</msg>
   <msg key="must_supply_either_multirow_or_indexed_array">you must supply either -multirow or -indexed_array</msg>
   <msg key="object_type">Object Type</msg>
+  <msg key="param_one">Parameter "%param%"</msg>
+  <msg key="param_name">Parameter</msg>
+  <msg key="param_source">Source</msg>
+  <msg key="param_source_eval">Tcl Function</msg>
+  <msg key="param_source_literal">Constant</msg>
+  <msg key="param_source_query">DB Query</msg>
+  <msg key="param_type">Type</msg>
+  <msg key="param_type_multilist">List with multiple columns</msg>
+  <msg key="param_type_onelist">List with one column</msg>
+  <msg key="param_type_onevalue">Single Value</msg>
+  <msg key="param_value">Value</msg>
+  <msg key="parameters">Parameters of "%attribute_name%"</msg>
+  <msg key="params">Parameters</msg>
   <msg key="pretty_name">Pretty Name</msg>
   <msg key="pretty_plural">Pretty Plural</msg>
   <msg key="remove">Remove</msg>
@@ -39,5 +52,6 @@
   <msg key="required_p">Required?</msg>
   <msg key="unable_to_retrieve_param">unable to retrieve widget parameter %name% for attribute %attribute_id% - returning "" as parameter value</msg>
   <msg key="widget">Widget</msg>
+  <msg key="widget_default">-- Default Widget --</msg>
 
 </message_catalog>

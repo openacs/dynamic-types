@@ -177,7 +177,7 @@ create table dtype_widget_template_params (
                    not null
                    constraint dtype_wgt_tpls_pm_src_ck 
                    check (param_source in ('literal', 'query', 'eval')),
-  value		         text,
+  value	           text,
   constraint dtype_wgt_tpls_pm_pk
   primary key(template_id, param_id)
 );
@@ -232,7 +232,7 @@ create table dtype_form_elements (
   form_id          integer
                    constraint dtype_felements_form_id_fk
                    references dtype_forms,
-  widget	         varchar(100)
+  widget           varchar(100)
                    constraint dtype_felements_widget_fk
                    references dtype_widgets
                    constraint dtype_felements_widget_nil
@@ -262,7 +262,7 @@ create table dtype_element_params (
                    not null,
                    constraint dtype_element_param_src_ck 
                    check (param_source in ('literal', 'query', 'eval')),
-  value		         text,
+  value	           text,
   constraint dtype_element_param_pk
   primary key(element_id, param_id)
 );

@@ -991,12 +991,12 @@ ad_proc -private dtype::form::metadata::flush_cache {
 
     if {[string equal $type dtype] || [string equal $type dtype.attribute]} {
         # flush the default form
-        util_memoize_flush_regexp "$function $object_type -dform \"default\""
+        util_memoize_flush_regexp "$function $object_type -dform \"implicit\".*"
     } else {
         set dform $dtype_event(dform)
 
         # flush the form specified in the event
-        util_memoize_flush_regexp "$function $object_type -dform \"$dform\""
+        util_memoize_flush_regexp "$function $object_type -dform \"$dform\".*"
     }
 }
 
