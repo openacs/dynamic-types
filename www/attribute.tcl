@@ -17,7 +17,7 @@ if {[info exists attribute_id]} {
     set page_title "[_ dynamic-types.attribute_add]"
 }
 
-set context [list [list dtypes "[_ dynamic-types.dynamic_types]"] [list [export_vars -base dtype {object_type}] $type_info(pretty_name)] $page_title]
+set context [list [list [export_vars -base dtype {object_type}] $type_info(pretty_name)] $page_title]
 set table_name $type_info(table_name)
 set datatype_options [db_list_of_lists get_datatypes {}]
 

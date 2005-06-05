@@ -13,7 +13,7 @@ acs_object_type::get -object_type $object_type -array type_info
 db_1row get_form_name {}
 
 set page_title "[_ dynamic-types.form_one]"
-set context [list [list dtypes "[_ dynamic-types.dynamic_types]"] [list [export_vars -base dtype {object_type}] $type_info(pretty_name)] $page_title]
+set context [list [list [export_vars -base dtype {object_type}] $type_info(pretty_name)] $page_title]
 set edit_form_url [export_vars -base form-ae {object_type form_id}]
 
 # Form associated with this object type

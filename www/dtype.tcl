@@ -11,7 +11,7 @@ ad_page_contract {
 acs_object_type::get -object_type $object_type -array type_info
 
 set page_title $type_info(pretty_name)
-set context [list [list dtypes "[_ dynamic-types.dynamic_types]"] $page_title]
+set context [list $page_title]
 
 list::create \
     -name attributes \

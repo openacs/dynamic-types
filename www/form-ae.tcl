@@ -17,7 +17,7 @@ if {[info exists form_id]} {
     set page_title "[_ dynamic-types.add_form]"
 }
 
-set context [list [list dtypes "[_ dynamic-types.dynamic_types]"] [list [export_vars -base dtype {object_type}] $type_info(pretty_name)] $page_title]
+set context [list [list [export_vars -base dtype {object_type}] $type_info(pretty_name)] $page_title]
 
 ad_form -name form_name -export {object_type} -form {
     {form_id:key(t_dtype_seq)}

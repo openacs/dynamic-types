@@ -13,7 +13,7 @@ acs_object_type::get -object_type $object_type -array type_info
 db_1row get_form_name {}
 
 set page_title "[_ dynamic-types.add_element]"
-set context [list [list dtypes "[_ dynamic-types.dynamic_types]"] [list [export_vars -base dtype {object_type}] $type_info(pretty_name)] [list [export_vars -base form {object_type form_id}] "[_ dynamic-types.form_one]"] $page_title]
+set context [list [list [export_vars -base dtype {object_type}] $type_info(pretty_name)] [list [export_vars -base form {object_type form_id}] "[_ dynamic-types.form_one]"] $page_title]
 
 set attribute_options [db_list_of_lists get_attributes {}]
 set boolean_options [list [list "[_ acs-kernel.common_Yes]" 1] [list "[_ acs-kernel.common_no]" 0]]
