@@ -49,9 +49,12 @@ ad_proc -public dtype::get_object {
               }
         }
     }
-    db_1row select_table_name {}
-    set columns [join $columns ", "]
-    db_0or1row select_object {} -column_array local
+
+    if {[llength $columns] > 0} {
+	db_1row select_table_name {}
+	set columns [join $columns ", "]
+	db_0or1row select_object {} -column_array local
+    }
 }
 
 ad_proc -public dtype::create {
