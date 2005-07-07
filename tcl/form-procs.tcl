@@ -43,6 +43,7 @@ ad_proc -public dtype::form::add_elements {
     {-cr_widget_options {}}
     {-exclude {}}
     {-exclude_static:boolean}
+    {-variables {}}
 } {
     Adds the elements of the specified object types dynamic form and all of its
     supertypes dynamic forms to the specified template form.
@@ -122,7 +123,8 @@ ad_proc -public dtype::form::add_elements {
             -cr_widget $cr_widget \
             -cr_widget_options $cr_widget_options \
 	    -exclude_static_p $exclude_static_p \
-	    -exclude $exclude
+	    -exclude $exclude \
+	    -variables $variables
     }
 }
 
@@ -487,6 +489,7 @@ ad_proc -private dtype::form::add_type_elements {
     {-cr_widget_options {}}
     {-exclude_static_p 0}
     {-exclude {}}
+    {-variables {}}
 } {
     Adds the elements of the specified or implicit object form to the specified
     template form.  
@@ -580,7 +583,7 @@ ad_proc -private dtype::form::add_type_elements {
                 break;
             }
 
-            set value [dtype::form::parameter_value -parameter params]
+            set value [dtype::form::parameter_value -parameter params -vars $variables]
 
             # determine if the parameter value is null
             switch $params(param_type) {
@@ -593,7 +596,7 @@ ad_proc -private dtype::form::add_type_elements {
                 }
             }
 
-            if {!$null_value_p} {
+            if {!$null_value_p || $params(param) == "options"} {
                 if {[template::util::is_true $params(is_html)]} {
                     lappend html_options $params(param)
                     lappend html_options $value
@@ -754,11 +757,14 @@ ad_proc -private dtype::form::types_list {
 ad_proc -private dtype::form::parameter_value {
     {-object_type ""}
     {-parameter:required}
+    {-vars:required}
 } {
     Calculates and returns the current value for the supplied parameter array 
     based on its type, source and default_value attributes.
+    Provide variables to tcl-procs by \$variables(--name--)
 } {
     upvar $parameter param
+    array set variables $vars
     set value ""
 
     set attribute_id $param(attribute_id)

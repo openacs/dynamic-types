@@ -24,6 +24,8 @@ ad_proc -public dtype::get_object {
     {-object_type:required}
     {-array:required}
     {-exclude_static:boolean}
+    {-dform implicit}
+    {-variables ""}
 } {
     Populates array with the data for the object specified.
 } {
@@ -54,6 +56,43 @@ ad_proc -public dtype::get_object {
 	db_1row select_table_name {}
 	set columns [join $columns ", "]
 	db_0or1row select_object {} -column_array local
+    }
+
+    dtype::form::metadata::widgets -object_type $object_type \
+        -dform $dform \
+	-exclude_static_p $exclude_static_p \
+        -multirow widgets
+    
+    dtype::form::metadata::params -object_type $object_type \
+        -dform $dform \
+        -multirow params
+
+    set widget_count [template::multirow size widgets]
+    set param_count [template::multirow size params]
+
+    for {set w 1} {$w <= $widget_count} {incr w} {
+        template::multirow get widgets $w
+
+	if {[lsearch -exact [list "select" "multiselect" "checkbox" "radio"] $widgets(widget)] > -1} {
+
+	    for {set p 1} {$p <= $param_count} {incr p} {
+		template::multirow get params $p
+
+		if {$params(attribute_id) != $widgets(attribute_id) || $params(param) != "options"} {
+		    continue;
+		}
+
+		set options [dtype::form::parameter_value -parameter params -vars $variables]
+		set new_value ""
+		set old_value $local($widgets(attribute_name))
+		foreach option $options {
+		    if {[lsearch -exact $old_value [lindex $option 1]] > -1} {
+			lappend new_value [lindex $option 0]
+		    }
+		}
+		set local($widgets(attribute_name)) [join $new_value ", "]
+	    }
+	}
     }
 }
 
