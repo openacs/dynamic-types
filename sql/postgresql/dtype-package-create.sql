@@ -276,6 +276,8 @@ begin
   end if;
 
   -- Drop the attribute
+  delete from dtype_attributes where attribute_id = v_attr_id;
+
   PERFORM acs_attribute__drop_attribute(p_object_type, 
                                         p_attribute_name);
 
