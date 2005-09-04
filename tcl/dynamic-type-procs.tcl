@@ -129,9 +129,14 @@ ad_proc -public dtype::delete {
 
     db_exec_plsql drop_type {}
 
+    set event(object_type) $name
+    set event(action) deleted
+    util::event::fire -event dtype event
+
     if {!$no_flush_p} {
-      dtype::flush_cache -type $name
+      dtype::flush_cache -type $name -event event
     }
+
 }
 
 ad_proc -public dtype::create_attribute {
@@ -164,10 +169,16 @@ ad_proc -public dtype::create_attribute {
     }
 
     db_exec_plsql create_attr {}
+
+    set event(object_type) $object_type
+    set event(attribute) $name
+    set event(action) created
+    util::event::fire -event dtype.attribute event
     
     if {!$no_flush_p} {
-      dtype::flush_cache -type $name
+      dtype::flush_cache -type $name -event event
     }
+
 }
 
 ad_proc -public dtype::get_attributes {
@@ -244,10 +255,15 @@ ad_proc -private dtype::get_attributes_list {
 
 ad_proc -private dtype::flush_cache {
    {-type:required}
+   {-event:required}
 } {
     Flushes the util_memoize cache of dtype calls for a given object type.
+    
+    event is assumed to be a name of an array that contains object_type and action
 } {
-    util_memoize_flush_regexp "dtype::get_attributes_list -no_cache -name \"$type\".*"
+    upvar $event dtype_event
+
+    util_memoize_flush_regexp "dtype::get_attributes_list -no_cache -name \"$dtype_event(object_type)\".*"
 }
 
 ad_proc -public dtype::edit_attribute {
@@ -262,8 +278,13 @@ ad_proc -public dtype::edit_attribute {
 } {
     db_dml update_attribute {}
 
+    set event(object_type) $object_type
+    set event(attribute) $name
+    set event(action) updated
+    util::event::fire -event dtype.attribute event
+
     if {!$no_flush_p} {
-      dtype::flush_cache -type $name
+      dtype::flush_cache -type $name -event event
     }
 }
 
@@ -289,8 +310,13 @@ ad_proc -public dtype::delete_attribute {
 
     db_exec_plsql drop_attr {}
 
+    set event(object_type) $object_type
+    set event(attribute) $name
+    set event(action) deleted
+    util::event::fire -event dtype.attribute event
+
     if {!$no_flush_p} {
-      dtype::flush_cache -type $name
+      dtype::flush_cache -type $name -event event
     }
 }
 
