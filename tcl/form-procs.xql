@@ -11,7 +11,7 @@
 
 <fullquery name="dtype::form::process.update_content"> 
 	<querytext>
-      update cr_revisions set content = (select content from cr_revisions where revision_id = :prev_revision_id)
+      update cr_revisions set content = (select content from cr_revisions where revision_id = :prev_revision_id) where revision_id = :revision_id
 	</querytext>
 </fullquery>
 
