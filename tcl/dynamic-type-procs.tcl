@@ -23,17 +23,22 @@ ad_proc -public dtype::get_object {
     {-object_id:required}
     {-object_type:required}
     {-array:required}
+    {-exclude_static:boolean}
+    {-dform implicit}
+    {-variables ""}
 } {
     Populates array with the data for the object specified.
 } {
+    set attributes_list [dtype::get_attributes_list -name $object_type -start_with acs_object -storage_types type_specific -exclude_static_p $exclude_static_p]
+
     upvar $array local
-
-    set attributes_list [dtype::get_attributes -name $object_type -list t attributes]
-
     set columns [list]
 
     foreach attribute_info $attributes_list {
         foreach {name pretty_name attribute_id datatype table_name column_name default_value min_n_values max_n_values static_p} $attribute_info break
+	if {$column_name == "package_id"} {
+	    continue
+	}
         switch $datatype {
               date -
               timestamp -
@@ -46,9 +51,49 @@ ad_proc -public dtype::get_object {
               }
         }
     }
-    db_1row select_table_name {}
-    set columns [join $columns ", "]
-    db_0or1row select_object {} -column_array local
+
+    if {[llength $columns] > 0} {
+	db_1row select_table_name {}
+	set columns [join $columns ", "]
+	db_0or1row select_object {} -column_array local
+    }
+
+    dtype::form::metadata::widgets -object_type $object_type \
+        -dform $dform \
+	-exclude_static_p $exclude_static_p \
+        -multirow widgets
+    
+    dtype::form::metadata::params -object_type $object_type \
+        -dform $dform \
+        -multirow params
+
+    set widget_count [template::multirow size widgets]
+    set param_count [template::multirow size params]
+
+    for {set w 1} {$w <= $widget_count} {incr w} {
+        template::multirow get widgets $w
+
+	if {[lsearch -exact [list "select" "multiselect" "checkbox" "radio"] $widgets(widget)] > -1} {
+
+	    for {set p 1} {$p <= $param_count} {incr p} {
+		template::multirow get params $p
+
+		if {$params(attribute_id) != $widgets(attribute_id) || $params(param) != "options"} {
+		    continue;
+		}
+
+		set options [dtype::form::parameter_value -parameter params -vars $variables]
+		set new_value ""
+		set old_value $local($widgets(attribute_name))
+		foreach option $options {
+		    if {[lsearch -exact $old_value [lindex $option 1]] > -1} {
+			lappend new_value [lindex $option 0]
+		    }
+		}
+		set local($widgets(attribute_name)) [join $new_value ", "]
+	    }
+	}
+    }
 }
 
 ad_proc -public dtype::create {
@@ -67,6 +112,7 @@ ad_proc -public dtype::create {
         set name_method [db_null]
     }
 
+    ns_log Debug "DYNAMIC TYPES: Creating Object $name with Pretty Name $pretty_name"
     db_exec_plsql create_type {}
 }
 
@@ -74,6 +120,7 @@ ad_proc -public dtype::delete {
     {-name:required}
     {-drop_children:boolean}
     {-drop_table:boolean}
+    {-no_flush:boolean}
 } {
     Delete a dynamically created content type.
 } {
@@ -85,6 +132,11 @@ ad_proc -public dtype::delete {
     set event(object_type) $name
     set event(action) deleted
     util::event::fire -event dtype event
+
+    if {!$no_flush_p} {
+      dtype::flush_cache -type $name -event event
+    }
+
 }
 
 ad_proc -public dtype::create_attribute {
@@ -95,6 +147,8 @@ ad_proc -public dtype::create_attribute {
     {-pretty_plural ""}
     {-sort_order ""}
     {-default_value ""}
+    {-no_flush:boolean}
+
 } {
     Creates an attribute on a content type.
 } {
@@ -115,11 +169,16 @@ ad_proc -public dtype::create_attribute {
     }
 
     db_exec_plsql create_attr {}
-    
+
     set event(object_type) $object_type
     set event(attribute) $name
     set event(action) created
     util::event::fire -event dtype.attribute event
+    
+    if {!$no_flush_p} {
+      dtype::flush_cache -type $name -event event
+    }
+
 }
 
 ad_proc -public dtype::get_attributes {
@@ -177,15 +236,20 @@ ad_proc -private dtype::get_attributes_list {
     {-name:required}
     {-start_with:required}
     {-storage_types:required}
+    {-exclude_static_p 0}
 } {
     Gets all the attributes of a object_type.  
 } {
     if {$no_cache_p} {
         set storage_clause "and a.storage in ('[join $storage_types "', '"]')"
 
-        return [db_list_of_lists select_attributes {}]
+	if {$exclude_static_p} {
+	    return [db_list_of_lists select_attributes_dynamic {}]
+	} else {
+	    return [db_list_of_lists select_attributes {}]
+	}
     } else {
-        return [util_memoize "dtype::get_attributes_list -no_cache -name \"$name\" -start_with \"$start_with\" -storage_types \"$storage_types\""]
+        return [util_memoize "dtype::get_attributes_list -no_cache -name \"$name\" -start_with \"$start_with\" -storage_types \"$storage_types\" -exclude_static_p $exclude_static_p"]
     }
 }
 
@@ -195,7 +259,7 @@ ad_proc -private dtype::flush_cache {
 } {
     Flushes the util_memoize cache of dtype calls for a given object type.
     
-    event is assumed to contain object_type and action
+    event is assumed to be a name of an array that contains object_type and action
 } {
     upvar $event dtype_event
 
@@ -207,6 +271,8 @@ ad_proc -public dtype::edit_attribute {
     {-object_type:required}
     {-pretty_name:required}
     {-pretty_plural:required}
+    {-default_value ""}
+    {-no_flush:boolean}
 } {
     Sets the details of an attribute.
 } {
@@ -216,6 +282,10 @@ ad_proc -public dtype::edit_attribute {
     set event(attribute) $name
     set event(action) updated
     util::event::fire -event dtype.attribute event
+
+    if {!$no_flush_p} {
+      dtype::flush_cache -type $name -event event
+    }
 }
 
 ad_proc -public dtype::get_attribute {
@@ -232,6 +302,7 @@ ad_proc -public dtype::delete_attribute {
     {-name:required}
     {-object_type:required}
     {-drop_column:boolean}
+    {-no_flush:boolean}
 } {
     Drops an attribute on a content type.
 } {
@@ -243,6 +314,10 @@ ad_proc -public dtype::delete_attribute {
     set event(attribute) $name
     set event(action) deleted
     util::event::fire -event dtype.attribute event
+
+    if {!$no_flush_p} {
+      dtype::flush_cache -type $name -event event
+    }
 }
 
 
@@ -372,11 +447,11 @@ ad_proc -public dtype::create_form {
     
     # get default widgets
     foreach type $types {
-                    if {[info exists type_dforms($type)]} {
-                set type_dform $type_dforms($type)
-            } else {
-                set type_dform "implicit"
-            }
+	if {[info exists type_dforms($type)]} {
+	    set type_dform $type_dforms($type)
+	} else {
+	    set type_dform "implicit"
+	}
         
         dtype::form::metadata::widgets -object_type $type \
                                    -dform $type_dform \

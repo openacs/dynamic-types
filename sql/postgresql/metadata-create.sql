@@ -15,7 +15,7 @@ begin
   insert into dtype_db_datatypes (datatype, db_type)
   values (''integer'', ''integer'');
   insert into dtype_db_datatypes (datatype, db_type)
-  values (''money'', ''text'');
+  values (''money'', ''varchar(30)'');
   insert into dtype_db_datatypes (datatype, db_type)
   values (''date'', ''timestamp'');
   insert into dtype_db_datatypes (datatype, db_type)
@@ -25,11 +25,13 @@ begin
   insert into dtype_db_datatypes (datatype, db_type)
   values (''enumeration'', ''text'');
   insert into dtype_db_datatypes (datatype, db_type)
-  values (''url'', ''text'');
+  values (''url'', ''varchar(1000)'');
   insert into dtype_db_datatypes (datatype, db_type)
-  values (''email'', ''text'');
+  values (''email'', ''varchar(100)'');
   insert into dtype_db_datatypes (datatype, db_type)
   values (''text'', ''text'');
+  insert into dtype_db_datatypes (datatype, db_type)
+  values (''string'', ''varchar(1000)'');
 
   raise notice ''Inserting standard widget metadata...'';
 
@@ -208,6 +210,21 @@ begin
 
   insert into dtype_default_widgets (template_id, datatype)
   values (v_template_id, ''text'');
+  
+  -- Text (single line) (default ''string'' widget)
+  v_template_id := dtype_wdgt_tmpl__new (
+      null,
+      null,
+      ''string'',
+      ''String'',
+      ''text'',
+      ''string'',
+      null,
+      null
+  );
+
+  insert into dtype_default_widgets (template_id, datatype)
+  values (v_template_id, ''string'');
   
   -- Email Address
   v_template_id := dtype_wdgt_tmpl__new (

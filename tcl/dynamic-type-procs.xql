@@ -46,7 +46,9 @@
          <querytext>
  
          update acs_attributes
-         set pretty_name=:pretty_name,pretty_plural=:pretty_plural
+         set pretty_name = :pretty_name,
+	     pretty_plural = :pretty_plural,
+	     default_value = :default_value
          where acs_attributes.attribute_name = :name
          and acs_attributes.object_type = :object_type
  
