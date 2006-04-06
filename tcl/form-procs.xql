@@ -57,7 +57,8 @@
              ea.param,
              ea.is_required,
              ea.is_html,
-             ea.default_value
+             ea.default_value,
+             a.attribute_name
         from dtype_element_params_all ea,
              acs_attributes a
        where a.attribute_id = ea.attribute_id

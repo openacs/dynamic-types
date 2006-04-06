@@ -44,6 +44,7 @@ ad_proc -public dtype::form::add_elements {
     {-exclude {}}
     {-exclude_static:boolean}
     {-variables {}}
+    {-no_action:boolean}
 } {
     Adds the elements of the specified object types dynamic form and all of its
     supertypes dynamic forms to the specified template form.
@@ -94,12 +95,14 @@ ad_proc -public dtype::form::add_elements {
             set override(object_id) [db_nextval acs_object_id_seq]
         }
     }
-    
-    template::element create $form ${prefix}dform_action \
-        -widget hidden \
-        -datatype text \
-        -sign \
-        -value $action  
+
+    if {!$no_action_p} {
+	template::element create $form ${prefix}dform_action \
+	    -widget hidden \
+	    -datatype text \
+	    -sign \
+	    -value $action
+    }
 
     foreach type $types {
         if {[info exists type_dforms($type)]} {
@@ -142,6 +145,7 @@ ad_proc -public dtype::form::process {
     {-cr_mime_filters {text/html dtype::mime_filters::text_html}}
     {-exclude {}}
     {-exclude_static:boolean}
+    {-dont_publish:boolean}
 } {
     Process a dynamic type form submission created by a function such as
     dtype::form::add_elements.  
@@ -157,6 +161,7 @@ ad_proc -public dtype::form::process {
     @param default_fields default columns with values to be used for db insert
     @param cr_widget the input method for the content 
     @param cr_storage the content repository storage method
+    @param dont_publish prevents from setting the live_revisions
     
     <p>TODO: Add support for HTMLArea.</p>
 
@@ -426,7 +431,9 @@ ad_proc -public dtype::form::process {
                     where revision_id = $latest_revision"
 	    }
 
-	    content::item::set_live_revision -revision_id $object_id
+	    if {!$dont_publish_p} {
+		content::item::set_live_revision -revision_id $object_id
+	    }
 
 	    set revision_ids [db_list get_revision_ids {}]
 	    set revision_id [lindex $revision_ids 0]
@@ -516,12 +523,13 @@ ad_proc -private dtype::form::add_type_elements {
     
     dtype::form::metadata::params -object_type $object_type \
         -dform $dform \
-        -multirow params
+        -multirow params \
+	-exclude $exclude
 
     set widget_count [template::multirow size widgets]
     set param_count [template::multirow size params]
 
-    set default_locale [lang::system::site_wide_locale]
+    set default_locale [lang::user::site_wide_locale -user_id [ad_conn user_id]]
     set p 1
 
     # Generate form elements for each attribute / widget
@@ -555,10 +563,11 @@ ad_proc -private dtype::form::add_type_elements {
         if {![template::util::is_true $widgets(is_required)]} {
             append element_create_cmd " -optional"
         }
-        
+
         if {![string equal $widgets(widget) file]} {
             # Append the initial value
-            if {[info exists override(${widgets(attribute_name)})]} {
+            if {[info exists override($widgets(attribute_name))]} {
+		regsub -all {\"} $override($widgets(attribute_name)) {\\"} override($widgets(attribute_name)) 
                 append element_create_cmd " [dtype::form::value_switch \
                     -widget $widgets(widget) \
                     -value $override($widgets(attribute_name))]"
@@ -567,20 +576,23 @@ ad_proc -private dtype::form::add_type_elements {
                     -widget $widgets(widget) \
                     -value $widgets(default_value)]"
             } else {
+		regsub -all {\"} $object($widgets(attribute_name)) {\\"} object($widgets(attribute_name)) 
                 append element_create_cmd " [dtype::form::value_switch \
                     -widget $widgets(widget) \
                     -value $object($widgets(attribute_name))]"
             }
         }
 
+	ns_log Notice "CREATE::: $element_create_cmd"
         # Get all the params for this element
-        for {} {$p <= $param_count} {incr p} {
+        for {set p 1} {$p <= $param_count} {incr p} {
             template::multirow get params $p
 
             if {$params(attribute_id) != $widgets(attribute_id)} {
                 # No more parameters for this widget, finish
                 # processing this element
-                break;
+                # break;
+		continue
             }
 
             set value [dtype::form::parameter_value -parameter params -vars $variables]
@@ -595,6 +607,11 @@ ad_proc -private dtype::form::add_type_elements {
                     set null_value_p [string equal $value ""]
                 }
             }
+
+            if {$params(param) == "options"} {
+		lappend widget_options "-$params(param)"
+		lappend widget_options $value
+	    }
 
             if {!$null_value_p || $params(param) == "options"} {
                 if {[template::util::is_true $params(is_html)]} {
@@ -624,7 +641,7 @@ ad_proc -private dtype::form::add_type_elements {
         }
 
         # Actually create the element
-        eval "$element_create_cmd $options_line"
+        eval $element_create_cmd $options_line
     }
 
     ############################################################
@@ -908,6 +925,7 @@ ad_proc -public dtype::form::metadata::params {
     {-dform:required}
     {-multirow {}}
     {-indexed_array {}}
+    {-exclude {}}
 } {
     Returns the widget metadata for the specified object_type and dform
     as either a local multirow or an indexed array.
@@ -936,7 +954,8 @@ ad_proc -public dtype::form::metadata::params {
                   is_required \
                   is_html \
                   default_value \
-                 ]
+		  attribute_name
+	     ]
 
     if {$multirow_p} {
         eval "template::multirow create \$multirow $keys"
@@ -949,16 +968,19 @@ ad_proc -public dtype::form::metadata::params {
                       -dform $dform]
     
     foreach param $metadata {
-        if {$multirow_p} {
-            eval "template::multirow append \$multirow $param"
-        } else {
-            for {set i 0} {$i < [llength $keys]} {incr i} {
-                set row([lindex $keys $i]) [lindex $param $i]
-            }
+	if {[empty_string_p $exclude] || [lsearch -exact $exclude [lindex $param 12]] == -1} {
 
-            set row_key [lindex $param 1],[lindex $param 8]
-            set result($row_key) [array get row]
-        }
+	    if {$multirow_p} {
+		eval "template::multirow append \$multirow $param"
+	    } else {
+		for {set i 0} {$i < [llength $keys]} {incr i} {
+		    set row([lindex $keys $i]) [lindex $param $i]
+		}
+
+		set row_key [lindex $param 1],[lindex $param 8]
+		set result($row_key) [array get row]
+	    }
+	}
     }
 }
 
