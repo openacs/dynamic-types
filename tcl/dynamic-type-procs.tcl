@@ -40,22 +40,25 @@ ad_proc -public dtype::get_object {
 	    continue
 	}
         switch $datatype {
-              date -
-              timestamp -
-              time_of_day {
-                  set format "'YYYY-MM-DD HH24:MI:SS'"
-                  lappend columns "to_char($column_name, $format) as $name"
-              }
-              default {
-                  lappend columns "$column_name as $name"
-              }
+	    date -
+	    timestamp -
+	    time_of_day {
+		set format "'YYYY-MM-DD HH24:MI:SS'"
+		lappend columns "to_char($column_name, $format) as $name"
+	    }
+	    boolean {
+		lappend columns "case when $column_name = true then 't' else 'f' end as $name"
+	    }
+	    default {
+		lappend columns "$column_name as $name"
+	    }
         }
     }
 
     if {[llength $columns] > 0} {
 	db_1row select_table_name {}
 	set columns [join $columns ", "]
-	db_0or1row select_object {} -column_array local
+	db_0or1row select_object {} -column_array data
     }
 
     dtype::form::metadata::widgets -object_type $object_type \
@@ -73,7 +76,7 @@ ad_proc -public dtype::get_object {
     for {set w 1} {$w <= $widget_count} {incr w} {
         template::multirow get widgets $w
 
-	if {[lsearch -exact [list "select" "multiselect" "checkbox" "radio"] $widgets(widget)] > -1} {
+	if {$dform != "implicit" && ([lsearch -exact [list "select" "multiselect" "checkbox" "radio"] $widgets(widget)] > -1)} {
 
 	    for {set p 1} {$p <= $param_count} {incr p} {
 		template::multirow get params $p
@@ -82,9 +85,9 @@ ad_proc -public dtype::get_object {
 		    continue;
 		}
 
-		set options [dtype::form::parameter_value -parameter params -vars $variables]
+		set options [lang::util::localize [dtype::form::parameter_value -parameter params -vars $variables]]
 		set new_value ""
-		set old_value $local($widgets(attribute_name))
+		set old_value $data($widgets(attribute_name))
 		foreach option $options {
 		    if {[lsearch -exact $old_value [lindex $option 1]] > -1} {
 			lappend new_value [lindex $option 0]
@@ -92,6 +95,8 @@ ad_proc -public dtype::get_object {
 		}
 		set local($widgets(attribute_name)) [join $new_value ", "]
 	    }
+	} else {
+	    set local($widgets(attribute_name)) $data($widgets(attribute_name))
 	}
     }
 }

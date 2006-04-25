@@ -111,9 +111,11 @@ ad_proc -public dtype::form::add_elements {
             set type_dform $dform
         }
 
-        dtype::get_object -object_id $object_id \
-            -object_type $object_type \
-            -array object
+	if {$action != "new"} {
+	    dtype::get_object -object_id $object_id \
+		-object_type $object_type \
+		-array object
+	}
         set object(object_id) $object_id
 
         dtype::form::add_type_elements -object_array object \
@@ -345,9 +347,9 @@ ad_proc -public dtype::form::process {
 
             set crv_$attributes(name) "" 
 
-            ns_log notice "PROCESSING: $attributes(name)"
+            ns_log debug "PROCESSING: $attributes(name)"
             if {[info exists widgets($attributes(attribute_id))]} {
-                ns_log notice "PROCESSING: found $attributes(name) in form"
+                ns_log debug "PROCESSING: found $attributes(name) in form"
                 # first check for the attribute in the submitted form
                 array set this_widget_info $widgets($attributes(attribute_id))
                 switch $this_widget_info(widget) {
@@ -391,6 +393,9 @@ ad_proc -public dtype::form::process {
 		switch $attributes(datatype) {
 		    date - time_of_day - timestamp {
 			lappend values [template::util::date::get_property sql_date [lindex [set crv_$attributes(name)] 0]]
+		    }
+		    boolean {
+			lappend values [ad_decode [set crv_$attributes(name)] t true false]
 		    }
 		    default {
 			lappend values ":crv_$attributes(name)"
@@ -583,7 +588,7 @@ ad_proc -private dtype::form::add_type_elements {
             }
         }
 
-	ns_log Notice "CREATE::: $element_create_cmd"
+	ns_log Debug "CREATE::: $element_create_cmd"
         # Get all the params for this element
         for {set p 1} {$p <= $param_count} {incr p} {
             template::multirow get params $p
@@ -595,7 +600,7 @@ ad_proc -private dtype::form::add_type_elements {
 		continue
             }
 
-            set value [dtype::form::parameter_value -parameter params -vars $variables]
+            set value [lang::util::localize [dtype::form::parameter_value -parameter params -vars $variables]]
 
             # determine if the parameter value is null
             switch $params(param_type) {
