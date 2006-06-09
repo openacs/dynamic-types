@@ -14,6 +14,8 @@
         <summary>Dynamic Object Type management API</summary>
         <vendor url="http://xarg.net">Xarg</vendor>
         <description format="text/plain">Allows creation, manipulation and ui generation of dynamically generated object types.</description>
+        <license>GPL</license>
+        <maturity>2</maturity>
 
         <provides url="dynamic-types" version="0.2d2"/>
         <requires url="acs-kernel" version="5.2.0d9"/>
