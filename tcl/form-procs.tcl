@@ -409,6 +409,9 @@ ad_proc -public dtype::form::process {
     # Perform the insert or update as appropriate
     #
 
+    # the postgres "insert into view" is rewritten by the rule into a "select", so no dml..
+    set db_stmt [expr {[db_driverkey ""] eq "postgresql" ? "db_0or1row" : "db_dml"}] 
+
     # title, description, object_title
     if {$content_type_p} {
 	set pos [lsearch -exact $columns package_id]
@@ -418,7 +421,7 @@ ad_proc -public dtype::form::process {
 
 	db_transaction {
 	    if {$new_p} { 
-		db_dml insert_statement "
+		$db_stmt insert_statement "
                     insert into ${type_info(table_name)}i 
                     ([join $columns ", "])
                     values 
@@ -427,7 +430,7 @@ ad_proc -public dtype::form::process {
 		set latest_revision [content::item::get_latest_revision -item_id $item_id]
 		set object_id [db_nextval acs_object_id_seq]
 
-		db_dml insert_statement "
+		$db_stmt insert_statement "
                     insert into ${type_info(table_name)}i 
                     ([join [concat $columns $missing_columns] ", "])
                     select  
@@ -465,7 +468,7 @@ ad_proc -public dtype::form::process {
 	}
     } else {
 	if {$new_p} { 
-	    db_dml insert_statement "
+	    $db_stmt insert_statement "
                 insert into ${type_info(table_name)}i ([join $columns ", "])
                 values ([join $values ", "])"
 	} else {
