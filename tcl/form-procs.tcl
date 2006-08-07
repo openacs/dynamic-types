@@ -419,6 +419,14 @@ ad_proc -public dtype::form::process {
 	set columns [concat "item_id" "revision_id" $columns]
 	set values [concat ":item_id" ":object_id" $values]
 
+	# Make sure not to set the object_package_id as this does not work
+	# More important though: The content_revision__new function automatically 
+	# detects the package_id of the item.
+
+	# Ideally someone would get rid of object_package_id and :crv_package_id 
+	# in columns and values. MS 2006/08/07
+	set crv_package_id ""
+
 	db_transaction {
 	    if {$new_p} { 
 		$db_stmt insert_statement "
