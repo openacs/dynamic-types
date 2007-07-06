@@ -19,7 +19,7 @@ set page_title "[_ dynamic-types.add_element]"
 set context [list [list [export_vars -base dtype {object_type}] $type_info(pretty_name)] [list [export_vars -base form {object_type form_id}] "[_ dynamic-types.form_one]"] $page_title]
 
 set attribute_options [db_list_of_lists get_attributes {}]
-set boolean_options [list [list "[_ acs-kernel.common_Yes]" 1] [list "[_ acs-kernel.common_no]" 0]]
+set boolean_options [list [list "[_ acs-kernel.common_Yes]" 1] [list "[_ acs-kernel.common_No]" 0]]
 set widget_options [concat [list [list "[_ dynamic-types.widget_default]" ""]] [db_list_of_lists get_widgets {}]]
 
 ad_form -name element_form -export {object_type} -form {

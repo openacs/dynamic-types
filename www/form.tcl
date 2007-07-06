@@ -57,7 +57,7 @@ list::create \
 db_multirow -extend { element_url param_url } elements get_elements {} {
     set element_url [export_vars -base element {object_type form_id element_id}]
     set param_url [export_vars -base element-params {object_type form_id element_id}]
-    set is_required [ad_decode $is_required t "[_ acs-kernel.common_Yes]" "[_ acs-kernel.common_no]"]
+    set is_required [ad_decode $is_required t "[_ acs-kernel.common_Yes]" "[_ acs-kernel.common_No]"]
 }
 
 ad_return_template
