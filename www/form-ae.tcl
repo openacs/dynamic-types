@@ -32,7 +32,7 @@ ad_form -name form_name -export {object_type} -form {
 } -new_data {
     dtype::form::new -object_type $object_type -form_name $name -form_id $form_id
 } -edit_data {
-    dtype::form::edit -form_name $name -form_id $form_d
+    dtype::form::edit -form_name $name -form_id $form_id
 } -after_submit {
     ad_returnredirect [export_vars -base form {object_type form_id}]
     ad_script_abort
