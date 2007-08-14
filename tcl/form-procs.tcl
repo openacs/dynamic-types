@@ -1210,6 +1210,7 @@ ad_proc -public dtype::form::new {
 }
 
 ad_proc -public dtype::form::edit {
+    {-object_type:required}
     {-form_name:required}
     {-form_id:required}
 } {
