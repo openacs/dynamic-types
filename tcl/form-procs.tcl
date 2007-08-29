@@ -262,7 +262,7 @@ ad_proc -public dtype::form::process {
             # any passed in storage type and use the one set in the content 
             # item
             set item_id [item::get_item_from_revision $object_id]
-            item::get -item_id $item_id -array item
+            content::item::get -item_id $item_id -array item
 
             set cr_storage $item(storage_type)
         }
