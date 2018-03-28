@@ -331,7 +331,7 @@ ad_proc -public dtype::def_from_table {
     {-table_name:required}
     {-name_method ""}
 } {
-    Creates an object type defintion from table defintion. Adds all
+    Creates an object type definition from table definition. Adds all
     attributes based on reasonable defaults. The table
     must already exist in the database
 
@@ -427,7 +427,7 @@ ad_proc -public dtype::create_form {
 
     @param exclude Attributes to exclude from automatically generated form.
 
-    @param spec Declarative specification for form defintion. Optional
+    @param spec Declarative specification for form definition. Optional
     instead of calling dtype::form::generate_widget repeatedly
 
     @param evaluate T or F, whether to evalute the code or just
