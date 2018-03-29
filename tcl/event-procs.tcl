@@ -1,7 +1,7 @@
 ad_library {
     A library which dispatches tcl callback events.
 
-    Events are assigned heirarchical symbolic names, eg:
+    Events are assigned hierarchical symbolic names, eg:
 
         major-type
         major-type.minor-type
