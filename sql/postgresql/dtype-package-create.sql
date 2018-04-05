@@ -281,7 +281,7 @@ begin
   PERFORM acs_attribute__drop_attribute(p_object_type, 
                                         p_attribute_name);
 
-  -- Drop the column if neccessary
+  -- Drop the column if necessary
   if p_drop_column then
       execute ''alter table '' || v_table || '' drop column '' ||
 	        p_attribute_name || '' cascade'';
@@ -411,7 +411,7 @@ dt_dummy for each row execute procedure dt_dummy_ins_del_tr ();
 -- into the input view when a new content revision is added.  Pg locks the 
 -- underlying table when the rule is dropped, so the dropping and recreating
 -- of the new content revisons seems like it would be reliable, but the 
--- possiblity of a race condition exists for either the initial creation
+-- possibility of a race condition exists for either the initial creation
 -- or dropping of a type.  I'm not sure if the possibility of a race condition
 -- actually exists in practice.  The thing to do here might be to just create 
 -- a function that dynamically builds the insert strings and does the 
