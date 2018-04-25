@@ -291,8 +291,8 @@ ad_proc -public dtype::form::process {
     #######################################################
     # Build up insert statement from metadata
     #
-    set columns [list]
-    set values [list]
+    set columns {}
+    set values {}
 
     # set default fields with provided values
     foreach var_spec $default_fields {
@@ -480,7 +480,7 @@ ad_proc -public dtype::form::process {
                 insert into ${type_info(table_name)}i ([join $columns ", "])
                 values ([join $values ", "])"
 	} else {
-	    set updates [list]
+	    set updates {}
 
 	    set all_columns [concat $columns $missing_columns]
 	    set all_values [concat $values $missing_columns]
@@ -551,8 +551,8 @@ ad_proc -private dtype::form::add_type_elements {
     # Generate form elements for each attribute / widget
     for {set w 1} {$w <= $widget_count} {incr w} {
         template::multirow get widgets $w 
-        set html_options [list]
-        set widget_options [list]
+        set html_options {}
+        set widget_options {}
 
 	# exclude specified widgets
 	if {[lsearch -exact $exclude $widgets(attribute_name)] > -1} {
@@ -823,7 +823,7 @@ ad_proc -private dtype::form::parameter_value {
                         # if the option list is empty, return
                         # somethign the select widget can use
                         if {$value eq ""} {
-                            set value [list [list]]
+                            set value [list {}]
                         }
                     }             
                 }

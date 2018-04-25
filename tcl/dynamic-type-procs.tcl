@@ -32,7 +32,7 @@ ad_proc -public dtype::get_object {
     set attributes_list [dtype::get_attributes_list -name $object_type -start_with acs_object -storage_types type_specific -exclude_static_p $exclude_static_p]
 
     upvar $array local
-    set columns [list]
+    set columns {}
 
     foreach attribute_info $attributes_list {
         foreach {name pretty_name attribute_id datatype table_name column_name default_value min_n_values max_n_values static_p} $attribute_info break
