@@ -66,7 +66,7 @@ ad_proc -public util::event::unregister {
     if {[nsv_exists util_events $event]} {
         set handlers [nsv_get util_events $event]
 
-        set result {}
+        set result [list]
         foreach handler $handlers {
             set cand_match [lindex $handler 0]
             set cand_script [lindex $handler 1]
@@ -122,7 +122,7 @@ ad_proc -public util::event::fire {
         lappend type_bins "[join [lrange $type_elms 0 $i] "."]."
     }
 
-    set results {}
+    set results [list]
 
     foreach type_bin $type_bins {
         if {[nsv_exists util_events $type_bin]} {

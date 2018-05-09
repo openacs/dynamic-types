@@ -45,7 +45,7 @@ ad_proc -public dtype::table::get_table_array {
     @error 
 } {
     set cols_lists [db_list_of_lists get_cols ""]
-    set cols {}
+    set cols [list]
     foreach l $cols_lists {
         lappend cols [lindex $l 0] [lindex $l 1]
     }
