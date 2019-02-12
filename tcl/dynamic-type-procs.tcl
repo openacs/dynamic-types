@@ -2,11 +2,11 @@ ad_library {
     A library of functions to create and manipulate dynamic object types.
 
     Creating a type through this api ensures that the necessary datamodel is in
-    place for the type and that a subtype of acs_object and corresponding 
-    acs_attribute metadata has been recorded.  
+    place for the type and that a subtype of acs_object and corresponding
+    acs_attribute metadata has been recorded.
 
     Currently (2004/10/12) only 'type_specific' attribute storage is supported,
-    although the API could be extended to support 'generic' skinny table 
+    although the API could be extended to support 'generic' skinny table
     storage.
 
     Special code handles subtypes of 'content_revision' so that dynamic content
@@ -15,7 +15,7 @@ ad_library {
     @author Rob Denison (rob@xarg.net)
     @creation-date 2004/10/12
     @cvs-id $Id$
-} 
+}
 
 namespace eval dtype {}
 
@@ -36,36 +36,36 @@ ad_proc -public dtype::get_object {
 
     foreach attribute_info $attributes_list {
         foreach {name pretty_name attribute_id datatype table_name column_name default_value min_n_values max_n_values static_p} $attribute_info break
-	if {$column_name == "package_id"} {
-	    continue
-	}
+        if {$column_name == "package_id"} {
+            continue
+        }
         switch $datatype {
-	    date -
-	    timestamp -
-	    time_of_day {
-		set format "'YYYY-MM-DD HH24:MI:SS'"
-		lappend columns "to_char($column_name, $format) as $name"
-	    }
-	    boolean {
-		lappend columns "case when $column_name = true then 't' else 'f' end as $name"
-	    }
-	    default {
-		lappend columns "$column_name as $name"
-	    }
+            date -
+            timestamp -
+            time_of_day {
+                set format "'YYYY-MM-DD HH24:MI:SS'"
+                lappend columns "to_char($column_name, $format) as $name"
+            }
+            boolean {
+                lappend columns "case when $column_name = true then 't' else 'f' end as $name"
+            }
+            default {
+                lappend columns "$column_name as $name"
+            }
         }
     }
 
     if {[llength $columns] > 0} {
-	db_1row select_table_name {}
-	set columns [join $columns ", "]
-	db_0or1row select_object {} -column_array data
+        db_1row select_table_name {}
+    set columns [join $columns ", "]
+    db_0or1row select_object {} -column_array data
     }
 
     dtype::form::metadata::widgets -object_type $object_type \
         -dform $dform \
-	-exclude_static_p $exclude_static_p \
+        -exclude_static_p $exclude_static_p \
         -multirow widgets
-    
+
     dtype::form::metadata::params -object_type $object_type \
         -dform $dform \
         -multirow params
@@ -76,28 +76,28 @@ ad_proc -public dtype::get_object {
     for {set w 1} {$w <= $widget_count} {incr w} {
         template::multirow get widgets $w
 
-	if {$dform != "implicit" && ([lsearch -exact [list "select" "multiselect" "checkbox" "radio"] $widgets(widget)] > -1)} {
+        if {$dform != "implicit" && ([lsearch -exact [list "select" "multiselect" "checkbox" "radio"] $widgets(widget)] > -1)} {
 
-	    for {set p 1} {$p <= $param_count} {incr p} {
-		template::multirow get params $p
+            for {set p 1} {$p <= $param_count} {incr p} {
+                template::multirow get params $p
 
-		if {$params(attribute_id) != $widgets(attribute_id) || $params(param) != "options"} {
-		    continue;
-		}
+                if {$params(attribute_id) != $widgets(attribute_id) || $params(param) != "options"} {
+                    continue;
+                }
 
-		set options [lang::util::localize [dtype::form::parameter_value -parameter params -vars $variables]]
-		set new_value ""
-		set old_value $data($widgets(attribute_name))
-		foreach option $options {
-		    if {[lsearch -exact $old_value [lindex $option 1]] > -1} {
-			lappend new_value [lindex $option 0]
-		    }
-		}
-		set local($widgets(attribute_name)) [join $new_value ", "]
-	    }
-	} else {
-	    set local($widgets(attribute_name)) $data($widgets(attribute_name))
-	}
+                set options [lang::util::localize [dtype::form::parameter_value -parameter params -vars $variables]]
+                set new_value ""
+                set old_value $data($widgets(attribute_name))
+                foreach option $options {
+                    if {[lsearch -exact $old_value [lindex $option 1]] > -1} {
+                        lappend new_value [lindex $option 0]
+                    }
+                }
+                set local($widgets(attribute_name)) [join $new_value ", "]
+            }
+        } else {
+            set local($widgets(attribute_name)) $data($widgets(attribute_name))
+        }
     }
 }
 
@@ -110,7 +110,7 @@ ad_proc -public dtype::create {
     {-id_column "XXX"}
     {-name_method ""}
 } {
-    Creates a content type with consolidated view (see plpgsql function 
+    Creates a content type with consolidated view (see plpgsql function
     dynamic_type__create_type).
 } {
     ns_log Debug "DYNAMIC TYPES: Creating Object $name with Pretty Name $pretty_name"
@@ -163,7 +163,7 @@ ad_proc -public dtype::create_attribute {
     set event(attribute) $name
     set event(action) created
     util::event::fire -event dtype.attribute event
-    
+
     if {!$no_flush_p} {
       dtype::flush_cache -type $name -event event
     }
@@ -187,7 +187,7 @@ ad_proc -public dtype::get_attributes {
         -storage_types $storage_types]
 
     if {!$list} {
-    
+
         template::multirow create $multirow \
             name \
             pretty_name \
@@ -200,7 +200,7 @@ ad_proc -public dtype::get_attributes {
             max_n_values \
             storage \
             static_p
-        
+
         foreach attribute $attributes {
             template::multirow append $multirow \
                 [lindex $attribute 0] \
@@ -217,7 +217,7 @@ ad_proc -public dtype::get_attributes {
         }
     } else {
         return $attributes
-    } 
+    }
 }
 
 ad_proc -private dtype::get_attributes_list {
@@ -227,16 +227,16 @@ ad_proc -private dtype::get_attributes_list {
     {-storage_types:required}
     {-exclude_static_p 0}
 } {
-    Gets all the attributes of a object_type.  
+    Gets all the attributes of a object_type.
 } {
     if {$no_cache_p} {
         set storage_clause "and a.storage in ('[join $storage_types "', '"]')"
 
-	if {$exclude_static_p} {
-	    return [db_list_of_lists select_attributes_dynamic {}]
-	} else {
-	    return [db_list_of_lists select_attributes {}]
-	}
+        if {$exclude_static_p} {
+            return [db_list_of_lists select_attributes_dynamic {}]
+        } else {
+            return [db_list_of_lists select_attributes {}]
+        }
     } else {
         return [util_memoize "dtype::get_attributes_list -no_cache -name \"$name\" -start_with \"$start_with\" -storage_types \"$storage_types\" -exclude_static_p $exclude_static_p"]
     }
@@ -247,7 +247,7 @@ ad_proc -private dtype::flush_cache {
    {-event:required}
 } {
     Flushes the util_memoize cache of dtype calls for a given object type.
-    
+
     event is assumed to be a name of an array that contains object_type and action
 } {
     upvar $event dtype_event
@@ -337,7 +337,7 @@ ad_proc -public dtype::def_from_table {
     set pretty_plural $pretty_name
     # FIXME do we want a default name method?
     set name_method ""
-    
+
     set code {}
     append code "
         dtype::create \
@@ -386,7 +386,7 @@ dtype::create_attribute \
 "
             }
         }
-    
+
     return $code
 }
 
@@ -400,10 +400,10 @@ ad_proc -public dtype::create_form {
 } {
      Create a dynamic types form for object type based on type
      definition using intelligent defaults.
-    
+
     @author Dave Bauer (dave@thedesignexperience.org)
     @creation-date 2005-02-14
-    
+
     @param object_type Object type form is for
 
     @param dform Name of form. We can't use 'default' because that is
@@ -415,11 +415,11 @@ ad_proc -public dtype::create_form {
     instead of calling dtype::form::generate_widget repeatedly
 
     @param evaluate T or F, whether to evalute the code or just
-    return it 
+    return it
 
     @return If evaluate is false, return code generated.
-    
-    @error 
+
+    @error
 } {
     set code ""
     # get widget defaults
@@ -429,19 +429,19 @@ ad_proc -public dtype::create_form {
         -object_id "" \
         -object_type $object_type]
     set object_type [lindex $types 0]
-    
+
     array set type_dforms $dforms
 
     # FIXME use spec if available!
-    
+
     # get default widgets
     foreach type $types {
-	if {[info exists type_dforms($type)]} {
-	    set type_dform $type_dforms($type)
-	} else {
-	    set type_dform "implicit"
-	}
-        
+        if {[info exists type_dforms($type)]} {
+            set type_dform $type_dforms($type)
+        } else {
+            set type_dform "implicit"
+        }
+
         dtype::form::metadata::widgets -object_type $type \
                                    -dform $type_dform \
                                    -multirow widgets
@@ -470,7 +470,7 @@ ad_proc -public dtype::create_form {
                     # if type of the foreign key table is a subtype of
                     # content revision, use the i view
                     # also check if its a dtype
-                    
+
                     append code "
                     dtype::form::metadata::create_widget_param \
                         -object_type $object_type \
@@ -485,7 +485,7 @@ ad_proc -public dtype::create_form {
 
             }
 
-            
+
         }
     }
     if {$evaluate} {
@@ -498,17 +498,17 @@ ad_proc -public dtype::create_form {
 ad_proc -public dtype::get_table_name {
     -object_type
 } {
-    
+
     Get name of type specicifc storage table
-    
+
     @author Dave Bauer (dave@thedesignexperience.org)
     @creation-date 2005-02-14
-    
+
     @param object_type Object type
 
     @return Table Name
-    
-    @error 
+
+    @error
 } {
     return [db_string get_table_name "" -default ""]
 }
@@ -516,18 +516,23 @@ ad_proc -public dtype::get_table_name {
 ad_proc -public dtype::get_id_column {
     -object_type
 } {
-    
+
     Get name of type specicifc storage table
-    
+
     @author Dave Bauer (dave@thedesignexperience.org)
     @creation-date 2005-02-14
-    
+
     @param object_type Object type
 
     @return Table Name
-    
-    @error 
+
+    @error
 } {
     return [db_string get_id_column "" -default ""]
 }
 
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 4
+#    indent-tabs-mode: nil
+# End:
