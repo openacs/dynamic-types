@@ -113,10 +113,6 @@ ad_proc -public dtype::create {
     Creates a content type with consolidated view (see plpgsql function 
     dynamic_type__create_type).
 } {
-    if {[string equal $name_method ""]} {
-        set name_method [db_null]
-    }
-
     ns_log Debug "DYNAMIC TYPES: Creating Object $name with Pretty Name $pretty_name"
     db_exec_plsql create_type {}
 }
@@ -157,18 +153,6 @@ ad_proc -public dtype::create_attribute {
 } {
     Creates an attribute on a content type.
 } {
-    if {[string equal $pretty_plural ""]} {
-        set pretty_plural [db_null]
-    }
-
-    if {[string equal $sort_order ""]} {
-        set sort_order [db_null]
-    }
-
-    if {[string equal $default_value ""]} {
-        set default_value [db_null]
-    }
-    
     if {![db_0or1row select_column_spec {}]} {
         set column_spec ""
     }

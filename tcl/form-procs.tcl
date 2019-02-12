@@ -206,19 +206,19 @@ ad_proc -public dtype::form::process {
 	set default(creation_ip) [ad_conn peeraddr]
     }
     if {![info exists default(context_id)]} {
-	set default(context_id) [db_null]
+	set default(context_id) ""
     }
     if {![info exists default(package_id)]} {
 	set default(package_id) [ad_conn package_id]
     }
     if {![info exists default(parent_id)]} {
-	set default(parent_id) [db_null]
+	set default(parent_id) ""
     }
     if {![info exists default(nls_language)]} {
-	set default(nls_language) [db_null]
+	set default(nls_language) ""
     }
     if {![info exists default(publish_date)]} {
-	set default(publish_date) [db_null]
+	set default(publish_date) ""
     }
     
     #######################################################
@@ -236,10 +236,10 @@ ad_proc -public dtype::form::process {
 
             array set item_defaults [list item_id $item_id \
                                          name "item$item_id" \
-                                         locale [db_null] \
-                                         parent_id [db_null] \
+                                         locale "" \
+                                         parent_id "" \
                                          content_type $object_type \
-                                         context_id [db_null] \
+                                         context_id "" \
                                          package_id [ad_conn package_id] \
                                          creation_user [ad_conn user_id] \
                                          creation_ip [ad_conn peeraddr] \
