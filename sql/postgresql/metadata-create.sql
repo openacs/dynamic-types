@@ -14,8 +14,7 @@ begin
   values (''number'', ''real'');
   insert into dtype_db_datatypes (datatype, db_type)
   values (''integer'', ''integer'');
-  insert into dtype_db_datatypes (datatype, db_type)
-  values (''currency'', ''varchar(30)'');
+--  insert into dtype_db_datatypes (datatype, db_type) values (''money'', ''varchar(30)'');
   insert into dtype_db_datatypes (datatype, db_type)
   values (''date'', ''timestamp'');
   insert into dtype_db_datatypes (datatype, db_type)

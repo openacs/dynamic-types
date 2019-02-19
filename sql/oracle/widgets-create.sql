@@ -140,8 +140,7 @@ begin
   insert into dtype_default_widgets (datatype, widget)
   values ('integer', 'text');
 
-  insert into dtype_default_widgets (datatype, widget)
-  values ('money', 'text');
+  -- insert into dtype_default_widgets (datatype, widget) values ('money', 'text');
 
   insert into dtype_default_widgets (datatype, widget)
   values ('date', 'date');

@@ -17,7 +17,7 @@
   <partialquery name="dtype::table::get_db_type_map.get_type_map">
     <querytext>int4 integer varchar text boolean boolean numeric
     number real number float number integer integer serial integer
-    money money date date timestamptz date
+    date date timestamptz date
     "timestamp with time zone" date
     "timestamp without time zone" date
     timestamp date
