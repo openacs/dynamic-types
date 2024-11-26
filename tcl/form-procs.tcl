@@ -470,7 +470,7 @@ ad_proc -public dtype::form::process {
                     -file $tmp_file \
                     -storage_type $cr_storage
 
-                ns_unlink $tmp_file
+                file delete $tmp_file
             }
         }
     } else {
@@ -759,7 +759,7 @@ ad_proc -private dtype::write_utf8_file {
     Write a temporary file in utf-8 character encoding containing the text
     supplied.
 } {
-    set tmp_file [ns_tmpnam]
+    set tmp_file [ns_mktemp]
 
     set fd [open $tmp_file w]
     fconfigure $fd -encoding utf-8
